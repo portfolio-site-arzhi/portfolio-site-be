@@ -1,0 +1,23 @@
+services:
+  portfolio_site_be:
+    container_name: portfolio_site_be
+    restart: "no"
+    networks:
+      - global_portfolio_site_network
+
+  portfolio_site_be_db:
+    container_name: portfolio_site_be_db
+    restart: "no"
+
+  portfolio_site_be_nginx:
+    container_name: portfolio_site_be_nginx
+    restart: "no"
+    networks:
+      - global_portfolio_site_network
+
+volumes:
+  postgresportfoliosite: {}
+
+networks:
+  global_portfolio_site_network:
+    external: true

@@ -1,0 +1,29 @@
+import { verifyPassword } from "../helper/password";
+import type { User } from "../model";
+
+export const validateLoginUser = async (
+  user: User | null,
+  password: string,
+): Promise<User> => {
+  if (!user) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  const activeUser = validateActiveUser(user);
+
+  const passwordOk = await verifyPassword(password, activeUser.password);
+  if (!passwordOk) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  return activeUser;
+};
+
+export const validateActiveUser = (user: User): User => {
+  if (!user.status) {
+    throw new Error("USER_INACTIVE");
+  }
+
+  return user;
+};
+

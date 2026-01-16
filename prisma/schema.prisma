@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String   @default("")
+  status     Boolean  @default(true)
+  google_id  String?  @unique @map("google_id")
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+  created_by Int      @default(0) @map("created_by")
+  updated_by Int      @default(0) @map("updated_by")
+
+  @@map("users")
+}
