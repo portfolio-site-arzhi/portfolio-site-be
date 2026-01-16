@@ -27,3 +27,10 @@ export const validateActiveUser = (user: User): User => {
   return user;
 };
 
+export const validateUserExists = (user: User | null): User => {
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
+  }
+  return user;
+};
+

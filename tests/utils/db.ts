@@ -2,6 +2,7 @@ import { getPrisma } from "../../src/config";
 
 export const resetDatabase = async () => {
   const prisma = getPrisma();
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "users" RESTART IDENTITY CASCADE');
+  // Gunakan deleteMany untuk keamanan dan menghindari masalah lock/permissions pada TRUNCATE
+  await prisma.user.deleteMany();
 };
 

@@ -25,3 +25,129 @@ Opsi A (direkomendasikan): backend redirect kembali ke frontend
 Catatan:
 
 - Kalau `FRONTEND_URL` tidak diisi, backend akan mengembalikan JSON `{ access_token, user }` sebagai fallback (berguna untuk Postman / alat debugging), tapi untuk frontend production disarankan selalu menggunakan Opsi A di atas.
+
+Profile pengguna
+----------------
+
+Endpoint ini digunakan frontend untuk mengambil data profile user yang sudah login.
+
+- Endpoint: `GET http://localhost:9000/auth/profile`
+- Auth: menggunakan cookie `access_token` yang sudah di-set saat proses login (browser akan mengirimkannya otomatis).
+
+Contoh cURL (untuk ilustrasi request dari frontend):
+
+```bash
+curl -X GET "http://localhost:9000/auth/profile" \
+  -H "Accept: application/json"
+```
+
+Contoh response sukses:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "name": "Test User",
+    "status": true
+  }
+}
+```
+
+Jika cookie `access_token` tidak ada atau tidak valid, backend akan mengembalikan error dengan bentuk:
+
+```json
+{
+  "errors": [
+    "Token akses tidak ditemukan"
+  ]
+}
+```
+
+atau
+
+```json
+{
+  "errors": [
+    "Token akses tidak valid"
+  ]
+}
+```
+
+Logout
+------
+
+Endpoint ini digunakan untuk mengakhiri sesi pengguna dengan menghapus cookie `access_token`.
+
+- Endpoint: `POST http://localhost:9000/auth/logout`
+- Auth: Optional (biasanya dengan cookie `access_token` yang ingin dihapus).
+
+Perilaku:
+- Backend akan menghapus cookie `access_token` dengan meng-set tanggal kadaluarsa ke masa lalu.
+- Mengembalikan pesan sukses.
+
+Contoh cURL:
+
+```bash
+curl -X POST "http://localhost:9000/auth/logout" \
+  -H "Accept: application/json"
+```
+
+Contoh response sukses:
+
+```json
+{
+  "message": "Logout berhasil"
+}
+```
+
+Refresh token
+-------------
+
+Endpoint ini digunakan frontend untuk meminta access token baru ketika token lama hampir kadaluarsa, tanpa perlu user login ulang.
+
+- Endpoint: `POST http://localhost:9000/auth/refresh-token`
+- Auth: menggunakan cookie `access_token` yang sudah di-set sebelumnya.
+
+Contoh cURL (untuk ilustrasi request dari frontend):
+
+```bash
+curl -X POST "http://localhost:9000/auth/refresh-token" \
+  -H "Accept: application/json"
+```
+
+Perilaku:
+
+- Backend akan memverifikasi JWT di cookie `access_token`.
+- Jika valid dan user masih aktif, backend akan:
+  - Menghasilkan access token baru.
+  - Mengirim header `Set-Cookie` baru untuk `access_token`.
+  - Mengembalikan JSON berisi token baru.
+
+Contoh response sukses:
+
+```json
+{
+  "access_token": "jwt_access_token_baru"
+}
+```
+
+Jika token tidak ada atau tidak valid, bentuk error mengikuti pola:
+
+```json
+{
+  "errors": [
+    "Token akses tidak ditemukan"
+  ]
+}
+```
+
+atau
+
+```json
+{
+  "errors": [
+    "Token akses tidak valid"
+  ]
+}
+```

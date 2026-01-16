@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { AuthService } from "../services/authService";
-import { validateLogin } from "../validation/authValidation";
+import { validateLogin, validateAuthCookie } from "../validation/authValidation";
 import { validateLoginUser } from "../validation/authDomainValidation";
 import { logger } from "../config";
 import {
@@ -225,6 +225,115 @@ export class AuthController {
       res
         .status(500)
         .json(buildErrorResponse(["Terjadi kesalahan pada Google login"]));
+    }
+  };
+
+  getProfile = async (req: Request, res: Response) => {
+    try {
+      const token = validateAuthCookie(req.cookies);
+
+      const user = await this.authService.getUserFromAccessToken(token);
+
+      res.status(200).json({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          status: user.status,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        handleDomainError(res, error, {
+          TOKEN_MISSING: {
+            status: 401,
+            messages: ["Token akses tidak ditemukan"],
+          },
+          INVALID_TOKEN: {
+            status: 401,
+            messages: ["Token akses tidak valid"],
+          },
+          USER_NOT_FOUND: {
+            status: 401,
+            messages: ["Pengguna tidak ditemukan"],
+          },
+          USER_INACTIVE: {
+            status: 403,
+            messages: ["Akun tidak aktif"],
+          },
+        })
+      ) {
+        return;
+      }
+
+      handleUnexpectedError(res, error, logger, "Get profile error");
+    }
+  };
+
+  refreshToken = async (req: Request, res: Response) => {
+    try {
+      const token = validateAuthCookie(req.cookies);
+
+      const tokens = await this.authService.refreshAccessToken(token);
+      setAuthCookie(res, tokens.accessToken);
+
+      res.status(200).json({
+        access_token: tokens.accessToken,
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        handleDomainError(res, error, {
+          TOKEN_MISSING: {
+            status: 401,
+            messages: ["Token akses tidak ditemukan"],
+          },
+          INVALID_TOKEN: {
+            status: 401,
+            messages: ["Token akses tidak valid"],
+          },
+          USER_NOT_FOUND: {
+            status: 401,
+            messages: ["Pengguna tidak ditemukan"],
+          },
+          USER_INACTIVE: {
+            status: 403,
+            messages: ["Akun tidak aktif"],
+          },
+        })
+      ) {
+        return;
+      }
+
+      handleUnexpectedError(res, error, logger, "Refresh token error");
+    }
+  };
+
+  logout = async (req: Request, res: Response) => {
+    try {
+      // Kita tetap panggil service logout (meski saat ini no-op)
+      // untuk antisipasi jika nanti ada logic blacklist/logging.
+      const token =
+        typeof req.cookies?.access_token === "string"
+          ? req.cookies.access_token
+          : "";
+
+      if (token) {
+        await this.authService.logout(token);
+      }
+
+      // Hapus cookie
+      res.clearCookie("access_token", {
+        httpOnly: true,
+        secure: isProductionLike,
+        sameSite: "lax",
+        path: "/",
+      });
+
+      res.status(200).json({ message: "Logout berhasil" });
+    } catch (error) {
+      handleUnexpectedError(res, error, logger, "Logout error");
     }
   };
 }

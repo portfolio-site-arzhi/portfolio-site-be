@@ -11,5 +11,7 @@ export const registerAuthRoutes = (app: Express) => {
   // app.post("/auth/login", controller.login);
   app.get("/auth/google", controller.googleAuth);
   app.get("/auth/google/callback", controller.googleCallback);
+  app.get("/auth/profile", controller.getProfile);
+  app.post("/auth/refresh-token", controller.refreshToken);
+  app.post("/auth/logout", controller.logout);
 };
-

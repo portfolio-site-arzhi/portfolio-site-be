@@ -1,7 +1,10 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
 import type { AuthResult, AuthTokens, GoogleProfile, User } from "../model";
 import type { UserRepository } from "../repository/contracts/userRepository";
-import { validateActiveUser } from "../validation/authDomainValidation";
+import {
+  validateActiveUser,
+  validateUserExists,
+} from "../validation/authDomainValidation";
 
 const getJwtSecret = () => {
   const fromEnv = process.env.COOKIE_SECRET;
@@ -17,6 +20,35 @@ const getJwtExpiresIn = (): SignOptions["expiresIn"] => {
     return Math.floor(asNumber);
   }
   return value as unknown as SignOptions["expiresIn"];
+};
+
+const getUserIdFromToken = (token: string): number => {
+  const secret = getJwtSecret();
+
+  try {
+    const decoded = jwt.verify(token, secret);
+
+    if (!decoded || typeof decoded !== "object") {
+      throw new Error("INVALID_TOKEN");
+    }
+
+    const sub = (decoded as { sub?: unknown }).sub;
+
+    if (typeof sub === "number" && Number.isFinite(sub)) {
+      return sub;
+    }
+
+    if (typeof sub === "string") {
+      const parsed = Number(sub);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    throw new Error("INVALID_TOKEN");
+  } catch {
+    throw new Error("INVALID_TOKEN");
+  }
 };
 
 export class AuthService {
@@ -70,6 +102,23 @@ export class AuthService {
     return { user: created, tokens };
   }
 
+  async getUserFromAccessToken(token: string): Promise<User> {
+    const userId = getUserIdFromToken(token);
+    const user = await this.userRepository.findById(userId);
+
+    // Kita gunakan helper validasi dari domain validation
+    // Jika user null, helper akan melempar error USER_NOT_FOUND
+    const existingUser = validateUserExists(user);
+    
+    return validateActiveUser(existingUser);
+  }
+
+  async refreshAccessToken(token: string): Promise<AuthTokens> {
+    const user = await this.getUserFromAccessToken(token);
+    const tokens = this.generateTokens(user);
+    return tokens;
+  }
+
   generateTokens(user: User): AuthTokens {
     const payload = {
       sub: user.id,
@@ -88,5 +137,11 @@ export class AuthService {
 
     const accessToken = jwt.sign(payload, secret, { expiresIn });
     return { accessToken };
+  }
+
+  async logout(_token: string): Promise<void> {
+    // Saat ini menggunakan stateless JWT, jadi tidak ada yang perlu dihapus di database.
+    // Method ini disiapkan jika nanti butuh blacklist token atau logging logout.
+    return;
   }
 }
