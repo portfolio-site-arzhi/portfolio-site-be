@@ -19,3 +19,10 @@ export const validateAuthCookie = (cookies: unknown): string => {
   return c.access_token;
 };
 
+export const validateRefreshCookie = (cookies: unknown): string => {
+  const c = cookies as { refresh_token?: string } | undefined;
+  if (!c?.refresh_token) {
+    throw new Error("REFRESH_TOKEN_MISSING");
+  }
+  return c.refresh_token;
+};

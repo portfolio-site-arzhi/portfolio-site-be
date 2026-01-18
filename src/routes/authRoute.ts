@@ -1,11 +1,13 @@
 import type { Express } from "express";
 import { PrismaUserRepository } from "../repository/userRepository";
+import { PrismaRefreshTokenRepository } from "../repository/refreshTokenRepository";
 import { AuthService } from "../services/authService";
 import { AuthController } from "../controllers/authController";
 
 export const registerAuthRoutes = (app: Express) => {
   const userRepository = new PrismaUserRepository();
-  const authService = new AuthService(userRepository);
+  const refreshTokenRepository = new PrismaRefreshTokenRepository();
+  const authService = new AuthService(userRepository, refreshTokenRepository);
   const controller = new AuthController(authService);
 
   // app.post("/auth/login", controller.login);

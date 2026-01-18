@@ -1,9 +1,12 @@
+import crypto from "crypto";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import type { AuthResult, AuthTokens, GoogleProfile, User } from "../model";
 import type { UserRepository } from "../repository/contracts/userRepository";
+import type { RefreshTokenRepository } from "../repository/contracts/refreshTokenRepository";
 import {
   validateActiveUser,
   validateUserExists,
+  validateRefreshTokenExists,
 } from "../validation/authDomainValidation";
 
 const getJwtSecret = () => {
@@ -51,15 +54,22 @@ const getUserIdFromToken = (token: string): number => {
   }
 };
 
+const generateRefreshTokenValue = () => {
+  return crypto.randomBytes(64).toString("hex");
+};
+
 export class AuthService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly refreshTokenRepository: RefreshTokenRepository,
+  ) {}
 
   async findUserByEmail(email: string): Promise<User | null> {
     return this.userRepository.findByEmail(email);
   }
 
   async loginWithUser(user: User): Promise<AuthResult<User>> {
-    const tokens = this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
     return { user, tokens };
   }
 
@@ -71,7 +81,7 @@ export class AuthService {
     );
     if (existingByGoogleId) {
       const activeUser = validateActiveUser(existingByGoogleId);
-      const tokens = this.generateTokens(activeUser);
+      const tokens = await this.generateTokens(activeUser);
       return { user: activeUser, tokens };
     }
 
@@ -85,7 +95,7 @@ export class AuthService {
         updatedBy: 0,
       });
       const activeUser = validateActiveUser(updated);
-      const tokens = this.generateTokens(activeUser);
+      const tokens = await this.generateTokens(activeUser);
       return { user: activeUser, tokens };
     }
 
@@ -98,7 +108,7 @@ export class AuthService {
       createdBy: 0,
       updatedBy: 0,
     });
-    const tokens = this.generateTokens(created);
+    const tokens = await this.generateTokens(created);
     return { user: created, tokens };
   }
 
@@ -106,20 +116,29 @@ export class AuthService {
     const userId = getUserIdFromToken(token);
     const user = await this.userRepository.findById(userId);
 
-    // Kita gunakan helper validasi dari domain validation
-    // Jika user null, helper akan melempar error USER_NOT_FOUND
     const existingUser = validateUserExists(user);
-    
     return validateActiveUser(existingUser);
   }
 
-  async refreshAccessToken(token: string): Promise<AuthTokens> {
-    const user = await this.getUserFromAccessToken(token);
-    const tokens = this.generateTokens(user);
+  async refreshAccessTokenFromRefreshToken(
+    refreshToken: string,
+  ): Promise<AuthTokens> {
+    const existing = await this.refreshTokenRepository.findByToken(
+      refreshToken,
+    );
+    const existingToken = validateRefreshTokenExists(existing);
+
+    const user = await this.userRepository.findById(existingToken.user_id);
+    const existingUser = validateUserExists(user);
+    const activeUser = validateActiveUser(existingUser);
+
+    await this.refreshTokenRepository.deleteById(existingToken.id);
+
+    const tokens = await this.generateTokens(activeUser);
     return tokens;
   }
 
-  generateTokens(user: User): AuthTokens {
+  private async generateTokens(user: User): Promise<AuthTokens> {
     const payload = {
       sub: user.id,
       email: user.email,
@@ -130,18 +149,35 @@ export class AuthService {
     const secret = getJwtSecret();
     const expiresIn = getJwtExpiresIn();
 
-    if (typeof expiresIn === "undefined") {
-      const accessToken = jwt.sign(payload, secret);
-      return { accessToken };
-    }
+    const accessToken =
+      typeof expiresIn === "undefined"
+        ? jwt.sign(payload, secret)
+        : jwt.sign(payload, secret, { expiresIn });
 
-    const accessToken = jwt.sign(payload, secret, { expiresIn });
-    return { accessToken };
+    const refreshTokenValue = generateRefreshTokenValue();
+    const refreshToken = await this.refreshTokenRepository.create(
+      user.id,
+      refreshTokenValue,
+    );
+
+    return {
+      accessToken,
+      refreshToken: refreshToken.token,
+    };
   }
 
-  async logout(_token: string): Promise<void> {
-    // Saat ini menggunakan stateless JWT, jadi tidak ada yang perlu dihapus di database.
-    // Method ini disiapkan jika nanti butuh blacklist token atau logging logout.
-    return;
+  async logout(_accessToken: string, refreshToken: string): Promise<void> {
+    if (!refreshToken) {
+      return;
+    }
+
+    const existing = await this.refreshTokenRepository.findByToken(
+      refreshToken,
+    );
+    if (!existing) {
+      return;
+    }
+
+    await this.refreshTokenRepository.deleteById(existing.id);
   }
 }

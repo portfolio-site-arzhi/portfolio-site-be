@@ -3,21 +3,29 @@ services:
     container_name: portfolio_site_be
     restart: "no"
     networks:
+      - portfolio_site_be_network
       - global_portfolio_site_network
 
   portfolio_site_be_db:
     container_name: portfolio_site_be_db
     restart: "no"
+    volumes:
+      - postgresportfoliosite:/var/lib/postgresql/data
+    networks:
+      - portfolio_site_be_network
 
   portfolio_site_be_nginx:
     container_name: portfolio_site_be_nginx
     restart: "no"
     networks:
+      - portfolio_site_be_network
       - global_portfolio_site_network
 
 volumes:
   postgresportfoliosite: {}
 
 networks:
+  portfolio_site_be_network:
+    driver: bridge
   global_portfolio_site_network:
     external: true

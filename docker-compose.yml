@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      args:
+        DATABASE_URL: ${DATABASE_URL_DOCKER}
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-9000}
@@ -12,11 +14,12 @@ services:
       DB_NAME: ${POSTGRES_DB:-portfolio_site}
       DB_USER: ${POSTGRES_USER:-portfolio_user}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-portfolio_password}
-      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://${POSTGRES_USER:-portfolio_user}:${POSTGRES_PASSWORD:-portfolio_password}@portfolio_site_be_db:5432/${POSTGRES_DB:-portfolio_site}?schema=public}
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3100}
       COOKIE_SECRET: ${COOKIE_SECRET:-change_me}
       RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-60}
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-900}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
@@ -36,8 +39,6 @@ services:
       TZ: ${TZ:-Asia/Jakarta}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgresportfoliosite:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s

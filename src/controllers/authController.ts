@@ -1,7 +1,12 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
+import type { AuthTokens } from "../model";
 import { AuthService } from "../services/authService";
-import { validateLogin, validateAuthCookie } from "../validation/authValidation";
+import {
+  validateLogin,
+  validateAuthCookie,
+  validateRefreshCookie,
+} from "../validation/authValidation";
 import { validateLoginUser } from "../validation/authDomainValidation";
 import { logger } from "../config";
 import {
@@ -13,13 +18,32 @@ import {
 import { httpClient } from "../helper/httpClient";
 
 const isProductionLike = process.env.NODE_ENV !== "development";
+const refreshTokenMaxAgeMs = 365 * 24 * 60 * 60 * 1000;
 
-const setAuthCookie = (res: Response, token: string) => {
-  res.cookie("access_token", token, {
+const setAuthCookies = (res: Response, tokens: AuthTokens) => {
+  res.cookie("access_token", tokens.accessToken, {
     httpOnly: true,
     secure: isProductionLike,
     sameSite: "lax",
     path: "/",
+  });
+
+  res.cookie("refresh_token", tokens.refreshToken, {
+    httpOnly: true,
+    secure: isProductionLike,
+    sameSite: "lax",
+    path: "/",
+    maxAge: refreshTokenMaxAgeMs,
+  });
+};
+
+const setLoginStatusCookie = (res: Response, value: boolean) => {
+  res.cookie("is_logged_in", value ? "true" : "false", {
+    httpOnly: false,
+    secure: false,
+    sameSite: "lax",
+    path: "/",
+    maxAge: refreshTokenMaxAgeMs,
   });
 };
 
@@ -32,7 +56,8 @@ export class AuthController {
       const user = await this.authService.findUserByEmail(input.email);
       const validatedUser = await validateLoginUser(user, input.password);
       const result = await this.authService.loginWithUser(validatedUser);
-      setAuthCookie(res, result.tokens.accessToken);
+      setAuthCookies(res, result.tokens);
+      setLoginStatusCookie(res, true);
       res.status(200).json({
         access_token: result.tokens.accessToken,
         user: {
@@ -201,7 +226,8 @@ export class AuthController {
         name: userInfo.name,
       });
 
-      setAuthCookie(res, result.tokens.accessToken);
+      setAuthCookies(res, result.tokens);
+      setLoginStatusCookie(res, true);
 
       const frontendUrl =
         process.env.FRONTEND_URL ?? process.env.APP_FRONTEND_URL;
@@ -273,10 +299,14 @@ export class AuthController {
 
   refreshToken = async (req: Request, res: Response) => {
     try {
-      const token = validateAuthCookie(req.cookies);
+      const refreshToken = validateRefreshCookie(req.cookies);
 
-      const tokens = await this.authService.refreshAccessToken(token);
-      setAuthCookie(res, tokens.accessToken);
+      const tokens =
+        await this.authService.refreshAccessTokenFromRefreshToken(
+          refreshToken,
+        );
+      setAuthCookies(res, tokens);
+      setLoginStatusCookie(res, true);
 
       res.status(200).json({
         access_token: tokens.accessToken,
@@ -285,13 +315,13 @@ export class AuthController {
       if (
         error instanceof Error &&
         handleDomainError(res, error, {
-          TOKEN_MISSING: {
+          REFRESH_TOKEN_MISSING: {
             status: 401,
-            messages: ["Token akses tidak ditemukan"],
+            messages: ["Refresh token tidak ditemukan"],
           },
-          INVALID_TOKEN: {
+          REFRESH_TOKEN_INVALID: {
             status: 401,
-            messages: ["Token akses tidak valid"],
+            messages: ["Refresh token tidak valid"],
           },
           USER_NOT_FOUND: {
             status: 401,
@@ -312,21 +342,37 @@ export class AuthController {
 
   logout = async (req: Request, res: Response) => {
     try {
-      // Kita tetap panggil service logout (meski saat ini no-op)
-      // untuk antisipasi jika nanti ada logic blacklist/logging.
       const token =
         typeof req.cookies?.access_token === "string"
           ? req.cookies.access_token
           : "";
+      const refreshToken =
+        typeof req.cookies?.refresh_token === "string"
+          ? req.cookies.refresh_token
+          : "";
 
-      if (token) {
-        await this.authService.logout(token);
+      if (token || refreshToken) {
+        await this.authService.logout(token, refreshToken);
       }
 
       // Hapus cookie
       res.clearCookie("access_token", {
         httpOnly: true,
         secure: isProductionLike,
+        sameSite: "lax",
+        path: "/",
+      });
+
+      res.clearCookie("refresh_token", {
+        httpOnly: true,
+        secure: isProductionLike,
+        sameSite: "lax",
+        path: "/",
+      });
+
+      res.clearCookie("is_logged_in", {
+        httpOnly: false,
+        secure: false,
         sameSite: "lax",
         path: "/",
       });

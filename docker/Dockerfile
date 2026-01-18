@@ -4,13 +4,14 @@ RUN apk add --no-cache tzdata curl python3 make g++
 
 WORKDIR /usr/src/app
 
-COPY package.json package-lock.json ./
-RUN npm ci
-
 COPY . .
 
+RUN npm install
+
 ARG DATABASE_URL="postgresql://user:password@localhost:5432/db?schema=public"
-RUN DATABASE_URL=$DATABASE_URL npm run prisma:generate
+ENV DATABASE_URL=${DATABASE_URL}
+RUN npm run prisma:generate
+
 RUN npm run build
 
 EXPOSE 9000

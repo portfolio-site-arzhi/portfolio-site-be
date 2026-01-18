@@ -1,5 +1,6 @@
 export interface AuthTokens {
   accessToken: string;
+  refreshToken: string;
 }
 
 export interface AuthResult<User> {
@@ -18,4 +19,3 @@ export interface SimpleFetchResponse {
   status: number;
   json(): Promise<unknown>;
 }
-

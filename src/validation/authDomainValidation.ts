@@ -1,5 +1,5 @@
 import { verifyPassword } from "../helper/password";
-import type { User } from "../model";
+import type { User, RefreshToken } from "../model";
 
 export const validateLoginUser = async (
   user: User | null,
@@ -34,3 +34,11 @@ export const validateUserExists = (user: User | null): User => {
   return user;
 };
 
+export const validateRefreshTokenExists = (
+  refreshToken: RefreshToken | null,
+): RefreshToken => {
+  if (!refreshToken) {
+    throw new Error("REFRESH_TOKEN_INVALID");
+  }
+  return refreshToken;
+};

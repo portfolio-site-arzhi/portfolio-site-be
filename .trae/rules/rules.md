@@ -1,5 +1,6 @@
 Context7:
 - Wajib pakai Context7 saat butuh pembuatan kode, langkah setup/konfigurasi, atau dokumentasi library/API.
+  - Wajib: resolve Library ID dulu, lalu ambil docs dari Context7.
 - Khusus dokumentasi Prisma (syntax, API, best practice), wajib pakai Context7, bukan Prisma-Local.
 
 Prisma-Local:
@@ -15,6 +16,7 @@ Aturan Umum:
 - Kalau menambahkan table baru di schema Prisma, wajib tambahkan field created_by dan updated_by (default 0 untuk id by system).
 - Isi file .env harus sama seperti env.example (jangan menambahkan nilai sensitif ke repo).
 - Isi file .env.testing/env.testing hanya untuk konfigurasi testing lokal dan tidak boleh berisi credential sensitif/production; gunakan nilai dummy atau khusus testing.
+ - Sering jalankan `npm run typecheck` terutama setelah perubahan kode untuk memastikan tidak ada error TypeScript.
 
 Arsitektur dan Struktur Folder:
 - Pattern umum: route, middleware, validation, controller, service, repository.
