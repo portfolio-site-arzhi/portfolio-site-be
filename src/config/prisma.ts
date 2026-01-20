@@ -15,4 +15,3 @@ export const getPrisma = () => {
   prisma = new PrismaClient({ adapter });
   return prisma;
 };
-

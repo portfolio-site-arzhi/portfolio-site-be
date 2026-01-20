@@ -14,14 +14,15 @@ export class PrismaRefreshTokenRepository implements RefreshTokenRepository {
     });
   }
 
-  findByToken(token: string): Promise<RefreshToken | null> {
-    return this.prisma.refreshToken.findUnique({
+  async findByToken(token: string): Promise<RefreshToken | null> {
+    const result = await this.prisma.refreshToken.findUnique({
       where: { token },
     });
+    return result;
   }
 
   async deleteById(id: number): Promise<void> {
-    await this.prisma.refreshToken.delete({
+    await this.prisma.refreshToken.deleteMany({
       where: { id },
     });
   }
@@ -32,4 +33,3 @@ export class PrismaRefreshTokenRepository implements RefreshTokenRepository {
     });
   }
 }
-

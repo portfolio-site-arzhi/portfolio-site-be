@@ -1,58 +1,16 @@
 import crypto from "crypto";
-import jwt, { type SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import type { AuthResult, AuthTokens, GoogleProfile, User } from "../model";
 import type { UserRepository } from "../repository/contracts/userRepository";
 import type { RefreshTokenRepository } from "../repository/contracts/refreshTokenRepository";
+import { getJwtExpiresIn, getJwtSecret } from "../config/jwt";
+import { hashSystemPassword } from "../helper/password";
 import {
   validateActiveUser,
+  validateAccessTokenUserId,
   validateUserExists,
   validateRefreshTokenExists,
 } from "../validation/authDomainValidation";
-
-const getJwtSecret = () => {
-  const fromEnv = process.env.COOKIE_SECRET;
-  if (fromEnv && fromEnv.length >= 16) return fromEnv;
-  return "change_me_jwt_secret";
-};
-
-const getJwtExpiresIn = (): SignOptions["expiresIn"] => {
-  const value = process.env.JWT_EXPIRES_IN;
-  if (!value) return "1h";
-  const asNumber = Number(value);
-  if (Number.isFinite(asNumber) && asNumber > 0) {
-    return Math.floor(asNumber);
-  }
-  return value as unknown as SignOptions["expiresIn"];
-};
-
-const getUserIdFromToken = (token: string): number => {
-  const secret = getJwtSecret();
-
-  try {
-    const decoded = jwt.verify(token, secret);
-
-    if (!decoded || typeof decoded !== "object") {
-      throw new Error("INVALID_TOKEN");
-    }
-
-    const sub = (decoded as { sub?: unknown }).sub;
-
-    if (typeof sub === "number" && Number.isFinite(sub)) {
-      return sub;
-    }
-
-    if (typeof sub === "string") {
-      const parsed = Number(sub);
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-    }
-
-    throw new Error("INVALID_TOKEN");
-  } catch {
-    throw new Error("INVALID_TOKEN");
-  }
-};
 
 const generateRefreshTokenValue = () => {
   return crypto.randomBytes(64).toString("hex");
@@ -101,7 +59,7 @@ export class AuthService {
 
     const created = await this.userRepository.createUser({
       email: profile.email,
-      password: "",
+      password: await hashSystemPassword(),
       name: profile.name,
       status: true,
       googleId: profile.id,
@@ -113,9 +71,8 @@ export class AuthService {
   }
 
   async getUserFromAccessToken(token: string): Promise<User> {
-    const userId = getUserIdFromToken(token);
+    const userId = validateAccessTokenUserId(token);
     const user = await this.userRepository.findById(userId);
-
     const existingUser = validateUserExists(user);
     return validateActiveUser(existingUser);
   }

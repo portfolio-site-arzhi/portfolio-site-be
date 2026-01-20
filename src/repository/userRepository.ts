@@ -17,6 +17,14 @@ export class PrismaUserRepository implements UserRepository {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  findAll(): Promise<User[]> {
+    return this.prisma.user.findMany({
+      orderBy: {
+        id: "desc",
+      },
+    });
+  }
+
   createUser(input: CreateUserInput): Promise<User> {
     const { email, password, name, status, googleId, createdBy, updatedBy } =
       input;
@@ -47,5 +55,12 @@ export class PrismaUserRepository implements UserRepository {
         updated_by: updatedBy,
       },
     });
+  }
+
+  async deleteUser(id: number): Promise<number> {
+    const result = await this.prisma.user.deleteMany({
+      where: { id },
+    });
+    return result.count;
   }
 }

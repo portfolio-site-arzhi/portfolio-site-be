@@ -4,10 +4,17 @@ import type { AuthTokens } from "../model";
 import { AuthService } from "../services/authService";
 import {
   validateLogin,
+  validateGoogleCallbackQuery,
   validateAuthCookie,
   validateRefreshCookie,
 } from "../validation/authValidation";
 import { validateLoginUser } from "../validation/authDomainValidation";
+import {
+  validateGoogleOAuthCallbackConfigFromEnv,
+  validateGoogleOAuthRedirectConfigFromEnv,
+  validateGoogleTokenResponse,
+  validateGoogleUserInfo,
+} from "../validation/googleOAuthValidation";
 import { logger } from "../config";
 import {
   buildErrorResponse,
@@ -94,60 +101,50 @@ export class AuthController {
   };
 
   googleAuth = async (_req: Request, res: Response) => {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    try {
+      const { clientId, redirectUri } =
+        validateGoogleOAuthRedirectConfigFromEnv();
 
-    if (!clientId || !redirectUri) {
-      res
-        .status(500)
-        .json(
-          buildErrorResponse(["Konfigurasi Google OAuth belum lengkap"]),
-        );
-      return;
+      const scope = [
+        "openid",
+        "email",
+        "profile",
+      ].join(" ");
+
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope,
+        access_type: "offline",
+        prompt: "consent",
+      });
+
+      const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+      res.redirect(url);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        handleDomainError(res, error, {
+          GOOGLE_OAUTH_CONFIG_MISSING: {
+            status: 500,
+            messages: ["Konfigurasi Google OAuth belum lengkap"],
+          },
+        })
+      ) {
+        return;
+      }
+
+      handleUnexpectedError(res, error, logger, "Google auth redirect error");
     }
-
-    const scope = [
-      "openid",
-      "email",
-      "profile",
-    ].join(" ");
-
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: "code",
-      scope,
-      access_type: "offline",
-      prompt: "consent",
-    });
-
-    const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-    res.redirect(url);
   };
 
   googleCallback = async (req: Request, res: Response) => {
-    const code = typeof req.query.code === "string" ? req.query.code : "";
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-
-    if (!code) {
-      res
-        .status(400)
-        .json(buildErrorResponse(["Kode otorisasi Google tidak ada"]));
-      return;
-    }
-
-    if (!clientId || !clientSecret || !redirectUri) {
-      res
-        .status(500)
-        .json(
-          buildErrorResponse(["Konfigurasi Google OAuth belum lengkap"]),
-        );
-      return;
-    }
-
     try {
+      const { code } = validateGoogleCallbackQuery(req.query);
+      const { clientId, clientSecret, redirectUri } =
+        validateGoogleOAuthCallbackConfigFromEnv();
+
       const tokenResponse = await httpClient.post(
         "https://oauth2.googleapis.com/token",
         new URLSearchParams({
@@ -161,6 +158,7 @@ export class AuthController {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
+          validateStatus: () => true,
         },
       );
 
@@ -168,28 +166,18 @@ export class AuthController {
         logger.error("Google token endpoint error", {
           status: tokenResponse.status,
         });
-        res
-          .status(400)
-          .json(buildErrorResponse(["Gagal mendapatkan token Google"]));
-        return;
+        throw new Error("GOOGLE_TOKEN_EXCHANGE_FAILED");
       }
 
-      const tokenJson = tokenResponse.data as {
-        access_token?: string;
-        id_token?: string;
-      };
-
-      if (!tokenJson.access_token) {
-        res.status(400).json(buildErrorResponse(["Token Google tidak valid"]));
-        return;
-      }
+      const token = validateGoogleTokenResponse(tokenResponse.data);
 
       const userInfoResponse = await httpClient.get(
         "https://www.googleapis.com/oauth2/v2/userinfo",
         {
           headers: {
-            Authorization: `Bearer ${tokenJson.access_token}`,
+            Authorization: `Bearer ${token.accessToken}`,
           },
+          validateStatus: () => true,
         },
       );
 
@@ -197,34 +185,12 @@ export class AuthController {
         logger.error("Google userinfo endpoint error", {
           status: userInfoResponse.status,
         });
-        res
-          .status(400)
-          .json(
-            buildErrorResponse(["Gagal mengambil data pengguna Google"]),
-          );
-        return;
+        throw new Error("GOOGLE_USERINFO_FAILED");
       }
 
-      const userInfo = userInfoResponse.data as {
-        id?: string;
-        email?: string;
-        name?: string;
-      };
+      const profile = validateGoogleUserInfo(userInfoResponse.data);
 
-      if (!userInfo.id || !userInfo.email || !userInfo.name) {
-        res
-          .status(400)
-          .json(
-            buildErrorResponse(["Data pengguna Google tidak lengkap"]),
-          );
-        return;
-      }
-
-      const result = await this.authService.loginWithGoogleProfile({
-        id: userInfo.id,
-        email: userInfo.email,
-        name: userInfo.name,
-      });
+      const result = await this.authService.loginWithGoogleProfile(profile);
 
       setAuthCookies(res, result.tokens);
       setLoginStatusCookie(res, true);
@@ -247,6 +213,39 @@ export class AuthController {
         },
       });
     } catch (error) {
+      if (error instanceof ZodError) {
+        handleZodError(res, error);
+        return;
+      }
+
+      if (
+        error instanceof Error &&
+        handleDomainError(res, error, {
+          GOOGLE_OAUTH_CONFIG_MISSING: {
+            status: 500,
+            messages: ["Konfigurasi Google OAuth belum lengkap"],
+          },
+          GOOGLE_TOKEN_EXCHANGE_FAILED: {
+            status: 400,
+            messages: ["Gagal mendapatkan token Google"],
+          },
+          GOOGLE_TOKEN_INVALID: {
+            status: 400,
+            messages: ["Token Google tidak valid"],
+          },
+          GOOGLE_USERINFO_FAILED: {
+            status: 400,
+            messages: ["Gagal mengambil data pengguna Google"],
+          },
+          GOOGLE_USERINFO_INCOMPLETE: {
+            status: 400,
+            messages: ["Data pengguna Google tidak lengkap"],
+          },
+        })
+      ) {
+        return;
+      }
+
       logger.error("Google callback error", { error });
       res
         .status(500)

@@ -19,3 +19,14 @@ export interface SimpleFetchResponse {
   status: number;
   json(): Promise<unknown>;
 }
+
+export interface GoogleOAuthRedirectConfig {
+  clientId: string;
+  redirectUri: string;
+}
+
+export interface GoogleOAuthCallbackConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}

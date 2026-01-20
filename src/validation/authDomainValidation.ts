@@ -1,5 +1,36 @@
 import { verifyPassword } from "../helper/password";
+import jwt from "jsonwebtoken";
 import type { User, RefreshToken } from "../model";
+import { getJwtSecret } from "../config/jwt";
+
+export const validateAccessTokenUserId = (token: string): number => {
+  const secret = getJwtSecret();
+
+  try {
+    const decoded = jwt.verify(token, secret);
+
+    if (!decoded || typeof decoded !== "object") {
+      throw new Error("INVALID_TOKEN");
+    }
+
+    const sub = (decoded as { sub?: unknown }).sub;
+
+    if (typeof sub === "number" && Number.isFinite(sub)) {
+      return sub;
+    }
+
+    if (typeof sub === "string") {
+      const parsed = Number(sub);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    throw new Error("INVALID_TOKEN");
+  } catch {
+    throw new Error("INVALID_TOKEN");
+  }
+};
 
 export const validateLoginUser = async (
   user: User | null,
