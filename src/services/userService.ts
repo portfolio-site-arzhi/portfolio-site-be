@@ -16,8 +16,26 @@ export class UserService {
     return this.userRepository.findByEmail(email);
   }
 
-  async listUsers(): Promise<User[]> {
-    return this.userRepository.findAll();
+  async listUsers(params?: {
+    page?: number;
+    pageSize?: number;
+    search?: string | undefined;
+    orderField?: "email" | "name" | "status" | "created_at" | "updated_at";
+    orderDir?: "asc" | "desc";
+  }): Promise<User[]> {
+    const page = params?.page ?? 1;
+    const pageSize = params?.pageSize ?? 10;
+    const skip = (page - 1) * pageSize;
+
+    return this.userRepository.findAll({
+      skip,
+      take: pageSize,
+      ...(typeof params?.search === "string" ? { search: params.search } : {}),
+      ...(typeof params?.orderField === "string"
+        ? { orderField: params.orderField }
+        : {}),
+      ...(typeof params?.orderDir === "string" ? { orderDir: params.orderDir } : {}),
+    });
   }
 
   async getUserById(id: number): Promise<User> {

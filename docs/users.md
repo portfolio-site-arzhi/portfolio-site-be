@@ -9,11 +9,17 @@ Daftar pengguna
 ---------------
 
 - Endpoint: `GET http://localhost:9000/users`
+- Query string:
+  - `page` (opsional, default `1`)
+  - `page_size` (opsional, default `10`, min `1`, max `100`)
+  - `search` (opsional, string; mencari di email dan name, case-insensitive)
+  - `order_field` (opsional, salah satu dari: `email`, `name`, `status`, `created_at`, `updated_at`)
+  - `order_dir` (opsional, `asc` atau `desc`, default `asc` jika `order_field` diisi)
 
 Contoh cURL:
 
 ```bash
-curl -X GET "http://localhost:9000/users" \
+curl -X GET "http://localhost:9000/users?page=1&page_size=10" \
   -H "Accept: application/json"
 ```
 
@@ -30,7 +36,14 @@ Respons sukses:
       "created_at": "2026-01-18T01:00:00.000Z",
       "updated_at": "2026-01-18T01:00:00.000Z"
     }
-  ]
+  ],
+  "meta": {
+    "page": 1,
+    "page_size": 10,
+    "search": null,
+    "order_field": null,
+    "order_dir": null
+  }
 }
 ```
 
@@ -224,6 +237,48 @@ Jika id tidak valid atau pengguna tidak ditemukan, bentuk error mengikuti pola:
 {
   "errors": [
     "Pengguna tidak ditemukan"
+  ]
+}
+```
+
+Hapus pengguna
+--------------
+
+Endpoint ini digunakan untuk menghapus pengguna berdasarkan id.
+
+- Endpoint: `DELETE http://localhost:9000/users/:id`
+
+Contoh cURL:
+
+```bash
+curl -X DELETE "http://localhost:9000/users/1" \
+  -H "Accept: application/json"
+```
+
+Respons sukses:
+
+```json
+{
+  "message": "User berhasil dihapus"
+}
+```
+
+Jika pengguna tidak ditemukan:
+
+```json
+{
+  "errors": [
+    "Pengguna tidak ditemukan"
+  ]
+}
+```
+
+Jika id tidak valid (misalnya `"invalid-id"`), backend akan mengembalikan error validasi dengan bentuk:
+
+```json
+{
+  "errors": [
+    "Pesan error validasi dari Zod"
   ]
 }
 ```

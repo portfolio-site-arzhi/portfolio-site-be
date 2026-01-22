@@ -1,5 +1,10 @@
 import { getPrisma } from "../config";
-import type { CreateUserInput, UpdateUserInput, User } from "../model";
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  User,
+  UserRepositoryFindAllParams,
+} from "../model";
 import type { UserRepository } from "./contracts/userRepository";
 
 export class PrismaUserRepository implements UserRepository {
@@ -17,12 +22,55 @@ export class PrismaUserRepository implements UserRepository {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  findAll(): Promise<User[]> {
-    return this.prisma.user.findMany({
-      orderBy: {
+  findAll(params?: UserRepositoryFindAllParams): Promise<User[]> {
+    const { skip, take, search, orderField, orderDir } = params ?? {};
+
+    const options: Parameters<typeof this.prisma.user.findMany>[0] = {};
+
+    if (typeof search === "string" && search) {
+      options.where = {
+        OR: [
+          {
+            email: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        ],
+      };
+    }
+
+    if (orderField) {
+      const direction = orderDir ?? "asc";
+      options.orderBy = [
+        {
+          [orderField]: direction,
+        },
+        {
+          id: "desc",
+        },
+      ];
+    } else {
+      options.orderBy = {
         id: "desc",
-      },
-    });
+      };
+    }
+
+    if (typeof skip === "number") {
+      options.skip = skip;
+    }
+
+    if (typeof take === "number") {
+      options.take = take;
+    }
+
+    return this.prisma.user.findMany(options);
   }
 
   createUser(input: CreateUserInput): Promise<User> {

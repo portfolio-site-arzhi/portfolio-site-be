@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { UserService } from "../services/userService";
 import {
   validateCreateUser,
+  validateListUsersQuery,
   validateUpdateUser,
   validateUpdateUserStatus,
   validateUserIdParam,
@@ -17,9 +18,20 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  list = async (_req: Request, res: Response) => {
+  list = async (req: Request, res: Response) => {
     try {
-      const users = await this.userService.listUsers();
+      const query = validateListUsersQuery(req.query);
+      const users = await this.userService.listUsers({
+        page: query.page,
+        pageSize: query.page_size,
+        ...(typeof query.search === "string" ? { search: query.search } : {}),
+        ...(typeof query.order_field === "string"
+          ? { orderField: query.order_field }
+          : {}),
+        ...(typeof query.order_dir === "string"
+          ? { orderDir: query.order_dir }
+          : {}),
+      });
       res.status(200).json({
         data: users.map((user) => ({
           id: user.id,
@@ -29,8 +41,20 @@ export class UserController {
           created_at: user.created_at,
           updated_at: user.updated_at,
         })),
+        meta: {
+          page: query.page,
+          page_size: query.page_size,
+          search: query.search ?? null,
+          order_field: query.order_field ?? null,
+          order_dir: query.order_dir ?? null,
+        },
       });
     } catch (error) {
+      if (error instanceof ZodError) {
+        handleZodError(res, error);
+        return;
+      }
+
       handleUnexpectedError(res, error, logger, "List users error");
     }
   };

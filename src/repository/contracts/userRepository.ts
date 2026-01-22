@@ -1,10 +1,15 @@
-import type { CreateUserInput, UpdateUserInput, User } from "../../model";
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  User,
+  UserRepositoryFindAllParams,
+} from "../../model";
 
 export interface UserRepository {
   findByEmail(email: string): Promise<User | null>;
   findByGoogleId(googleId: string): Promise<User | null>;
   findById(id: number): Promise<User | null>;
-  findAll(): Promise<User[]>;
+  findAll(params?: UserRepositoryFindAllParams): Promise<User[]>;
   createUser(input: CreateUserInput): Promise<User>;
   updateUser(id: number, input: UpdateUserInput): Promise<User>;
   deleteUser(id: number): Promise<number>;

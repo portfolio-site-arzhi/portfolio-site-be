@@ -16,3 +16,20 @@ export interface UpdateUserInput {
   updatedBy: number;
 }
 
+export type UserOrderField = "email" | "name" | "status" | "created_at" | "updated_at";
+
+export interface UserListQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  orderField?: UserOrderField;
+  orderDir?: "asc" | "desc";
+}
+
+export interface UserRepositoryFindAllParams {
+  skip?: number;
+  take?: number;
+  search?: string;
+  orderField?: UserOrderField;
+  orderDir?: "asc" | "desc";
+}
