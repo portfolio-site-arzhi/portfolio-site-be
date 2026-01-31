@@ -2,6 +2,7 @@ import type { Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
+import path from "path";
 import qs from "qs";
 import { configureMethodOverride } from "./methodOverride";
 import { configureRateLimit } from "./rateLimit";
@@ -29,6 +30,8 @@ export const configureExpress = (app: Express) => {
   app.use(cookieSecret ? cookieParser(cookieSecret) : cookieParser());
 
   configureRateLimit(app);
+  const uploadsDir = path.join(process.cwd(), "uploads");
+  app.use("/uploads", express.static(uploadsDir));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   configureMethodOverride(app);

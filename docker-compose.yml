@@ -24,6 +24,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       FRONTEND_URL: ${FRONTEND_URL}
+      BASEURL: ${BASEURL:-http://localhost:9000}
     depends_on:
       portfolio_site_be_db:
         condition: service_healthy

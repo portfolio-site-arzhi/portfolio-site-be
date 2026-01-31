@@ -9,6 +9,15 @@ export const buildErrorResponse = (
   return { errors: list };
 };
 
+export const handleJsonSyntaxError = (res: Response, error: unknown) => {
+  if (error instanceof SyntaxError) {
+    res.status(400).json(buildErrorResponse(["Payload JSON tidak valid"]));
+    return true;
+  }
+
+  return false;
+};
+
 export const handleZodError = (res: Response, error: ZodError) => {
   const messages = error.issues.map((issue) => issue.message);
   res.status(400).json(buildErrorResponse(messages));

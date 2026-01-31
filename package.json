@@ -17,6 +17,7 @@
     "reset:db": "prisma migrate reset --force",
     "reset:db:test": "dotenv -e .env.testing npx prisma migrate reset --force",
     "seed": "prisma db seed",
+    "seed:site-config": "ts-node --project tsconfig.seed.json prisma/seed-site-config.ts",
     "test:action": "jest --runInBand",
     "test:local": "dotenv -e .env.testing jest --runInBand --testTimeout=30000 --verbose"
   },
