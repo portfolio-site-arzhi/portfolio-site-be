@@ -1,6 +1,4 @@
-import type { User } from "../model";
-
-type PrismaErrorWithCode = { code: string };
+import type { PrismaErrorWithCode, User } from "../model";
 
 const isPrismaErrorWithCode = (error: unknown): error is PrismaErrorWithCode => {
   if (typeof error !== "object" || error === null) {

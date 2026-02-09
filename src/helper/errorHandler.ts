@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
-import type { ErrorResponseBody } from "../model";
+import type { DomainErrorMapping, ErrorResponseBody } from "../model";
 
 export const buildErrorResponse = (
   messages: string | string[],
@@ -21,13 +21,6 @@ export const handleJsonSyntaxError = (res: Response, error: unknown) => {
 export const handleZodError = (res: Response, error: ZodError) => {
   const messages = error.issues.map((issue) => issue.message);
   res.status(400).json(buildErrorResponse(messages));
-};
-
-type DomainErrorMapping = {
-  [code: string]: {
-    status: number;
-    messages: string[];
-  };
 };
 
 export const handleDomainError = (
@@ -51,5 +44,28 @@ export const handleUnexpectedError = (
   message: string,
 ) => {
   logger.error(message, { error });
+
+  if (typeof error === "object" && error !== null) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === "string" && code === "P2022") {
+      res.status(500).json(
+        buildErrorResponse([
+          "Database schema tidak sesuai dengan aplikasi (migrasi belum dijalankan)",
+        ]),
+      );
+      return;
+    }
+
+    const name = (error as { name?: unknown }).name;
+    if (typeof name === "string" && name === "PrismaClientValidationError") {
+      res.status(500).json(
+        buildErrorResponse([
+          "Prisma Client tidak sesuai dengan schema (jalankan prisma generate)",
+        ]),
+      );
+      return;
+    }
+  }
+
   res.status(500).json(buildErrorResponse(["Terjadi kesalahan pada server"]));
 };

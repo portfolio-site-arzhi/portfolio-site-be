@@ -47,3 +47,42 @@ model SiteConfiguration {
   @@unique([type, locale, key])
   @@map("site_configurations")
 }
+
+model Experience {
+  id           Int       @id @default(autoincrement())
+  sort         Int       @map("sort")
+  is_published Boolean   @default(false) @map("is_published")
+  role_id      String    @map("role_id") @db.VarChar(180)
+  role_en      String    @map("role_en") @db.VarChar(180)
+  company_name String    @map("company_name") @db.VarChar(180)
+  company_url  String?   @map("company_url") @db.VarChar(500)
+  start_date   DateTime? @map("start_date") @db.Date
+  end_date     DateTime? @map("end_date") @db.Date
+  is_current   Boolean   @default(false) @map("is_current")
+  description_id String  @map("description_id") @db.Text
+  description_en String  @map("description_en") @db.Text
+  created_at   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updated_at   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  created_by   Int       @default(0) @map("created_by")
+  updated_by   Int       @default(0) @map("updated_by")
+
+  skills ExperienceSkill[]
+
+  @@map("experiences")
+}
+
+model ExperienceSkill {
+  id            Int       @id @default(autoincrement())
+  experience_id Int       @map("experience_id")
+  skill_name    String    @map("skill_name") @db.VarChar(100)
+  sort          Int       @map("sort")
+  created_at    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updated_at    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  created_by    Int       @default(0) @map("created_by")
+  updated_by    Int       @default(0) @map("updated_by")
+
+  experience Experience @relation(fields: [experience_id], references: [id], onDelete: Cascade)
+
+  @@index([experience_id])
+  @@map("experiences_skills")
+}

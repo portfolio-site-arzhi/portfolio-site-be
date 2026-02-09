@@ -26,7 +26,6 @@ describe("POST /site-configs/bulk", () => {
               id: "Deskripsi profil singkat dalam bahasa Indonesia",
               en: "Short profile description in English",
             },
-            photo: "https://example.com/photo-id.jpg",
           },
         },
         about: {
@@ -59,7 +58,6 @@ describe("POST /site-configs/bulk", () => {
         id: "Deskripsi profil singkat dalam bahasa Indonesia",
         en: "Short profile description in English",
       },
-      photo: "https://example.com/photo-id.jpg",
     });
     expect(response.body.data.about).toEqual({
       about_me: {
