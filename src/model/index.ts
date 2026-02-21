@@ -10,4 +10,6 @@ export * from "./education";
 export * from "./educationInput";
 export * from "./certification";
 export * from "./certificationInput";
+export * from "./skill";
+export * from "./skillInput";
 export type { SiteConfiguration } from "./user";

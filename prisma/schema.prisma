@@ -48,6 +48,38 @@ model SiteConfiguration {
   @@map("site_configurations")
 }
 
+model SkillGroup {
+  id            Int      @id @default(autoincrement())
+  name          String   @map("name") @db.VarChar(100)
+  display_order Int      @default(0) @map("display_order")
+  is_active     Boolean  @default(true) @map("is_active")
+  created_at    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updated_at    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  created_by    Int      @default(0) @map("created_by")
+  updated_by    Int      @default(0) @map("updated_by")
+
+  skills Skill[]
+
+  @@index([is_active, display_order])
+  @@map("skill_groups")
+}
+
+model Skill {
+  id             Int      @id @default(autoincrement())
+  skill_group_id Int      @map("skill_group_id")
+  name           String   @map("name") @db.VarChar(100)
+  display_order  Int      @default(0) @map("display_order")
+  created_at     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updated_at     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  created_by     Int      @default(0) @map("created_by")
+  updated_by     Int      @default(0) @map("updated_by")
+
+  skill_group SkillGroup @relation(fields: [skill_group_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([skill_group_id, display_order])
+  @@map("skills")
+}
+
 model Experience {
   id           Int       @id @default(autoincrement())
   sort         Int       @map("sort")

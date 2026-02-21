@@ -47,6 +47,15 @@ export const handleUnexpectedError = (
 
   if (typeof error === "object" && error !== null) {
     const code = (error as { code?: unknown }).code;
+    if (typeof code === "string" && code === "P2021") {
+      res.status(500).json(
+        buildErrorResponse([
+          "Database schema tidak sesuai dengan aplikasi (tabel belum tersedia, jalankan migrasi)",
+        ]),
+      );
+      return;
+    }
+
     if (typeof code === "string" && code === "P2022") {
       res.status(500).json(
         buildErrorResponse([
