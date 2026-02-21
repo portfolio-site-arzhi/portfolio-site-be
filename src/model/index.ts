@@ -6,4 +6,8 @@ export * from "./refreshToken";
 export * from "./siteConfig";
 export * from "./experience";
 export * from "./experienceInput";
+export * from "./education";
+export * from "./educationInput";
+export * from "./certification";
+export * from "./certificationInput";
 export type { SiteConfiguration } from "./user";

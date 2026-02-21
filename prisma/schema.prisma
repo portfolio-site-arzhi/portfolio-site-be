@@ -86,3 +86,47 @@ model ExperienceSkill {
   @@index([experience_id])
   @@map("experiences_skills")
 }
+
+model Education {
+  id               Int       @id @default(autoincrement())
+  institution_name String    @map("institution_name") @db.VarChar(255)
+  degree           String    @map("degree") @db.VarChar(255)
+  degree_en        String    @map("degree_en") @db.VarChar(255)
+  field_of_study   String    @map("field_of_study") @db.VarChar(255)
+  field_of_study_en String   @map("field_of_study_en") @db.VarChar(255)
+  start_date       DateTime  @map("start_date") @db.Date
+  end_date         DateTime? @map("end_date") @db.Date
+  description      String?   @map("description") @db.Text
+  description_en   String?   @map("description_en") @db.Text
+  location         String?   @map("location") @db.VarChar(255)
+  sort_order       Int       @default(0) @map("sort_order")
+  is_active        Boolean   @default(true) @map("is_active")
+  created_at       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updated_at       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  created_by       Int       @default(0) @map("created_by")
+  updated_by       Int       @default(0) @map("updated_by")
+
+  @@index([is_active, sort_order])
+  @@index([created_at])
+  @@map("educations")
+}
+
+model Certification {
+  id                   Int      @id @default(autoincrement())
+  name                 String   @map("name") @db.VarChar(255)
+  name_en              String   @map("name_en") @db.VarChar(255)
+  issuing_organization String   @map("issuing_organization") @db.VarChar(255)
+  issue_date           DateTime @map("issue_date") @db.Date
+  description          String?  @map("description") @db.Text
+  description_en       String?  @map("description_en") @db.Text
+  sort_order           Int      @default(0) @map("sort_order")
+  is_active            Boolean  @default(true) @map("is_active")
+  created_at           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updated_at           DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  created_by           Int      @default(0) @map("created_by")
+  updated_by           Int      @default(0) @map("updated_by")
+
+  @@index([is_active, sort_order])
+  @@index([issue_date])
+  @@map("certifications")
+}

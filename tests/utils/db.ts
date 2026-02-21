@@ -4,6 +4,6 @@ export const resetDatabase = async () => {
   const prisma = getPrisma();
 
   await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE "users", "refresh_tokens", "site_configurations", "experiences", "experiences_skills" RESTART IDENTITY CASCADE;`,
+    `TRUNCATE TABLE "users", "refresh_tokens", "site_configurations", "experiences", "experiences_skills", "educations", "certifications" RESTART IDENTITY CASCADE;`,
   );
 };
