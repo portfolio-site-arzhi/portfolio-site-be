@@ -7,6 +7,7 @@ Multi-language hanya digunakan pada dua field konten:
 
 - `home.description` (teks deskripsi di halaman Home)
 - `about.about_me` (teks "tentang saya" di halaman About)
+- Untuk endpoint non-GET (`POST /site-configs/bulk`) backend mengembalikan field `message` yang mendukung `Accept-Language` (`id` / `en`). Jika header tidak dikirim atau tidak didukung, default ke `id`.
 
 List semua konfigurasi
 ----------------------
@@ -153,6 +154,7 @@ Contoh cURL:
 ```bash
 curl -X POST "http://localhost:9000/site-configs/bulk" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -F 'payload={
     "system": {
       "primary_color": "#1976D2",

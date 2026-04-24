@@ -26,6 +26,7 @@ describe("CRUD /educations", () => {
       });
 
     expect(response.status).toBe(201);
+    expect(response.body.message).toBe("Education berhasil dibuat");
     expect(response.body.data).toEqual(
       expect.objectContaining({
         id: expect.any(Number),
@@ -126,6 +127,7 @@ describe("CRUD /educations", () => {
       });
 
     expect(updated.status).toBe(200);
+    expect(updated.body.message).toBe("Education berhasil diperbarui");
     expect(updated.body.data.institution_name).toBe("Updated Inst");
     expect(updated.body.data.is_active).toBe(false);
     expect(updated.body.data.description).toContain("<p>New</p>");
@@ -155,6 +157,7 @@ describe("CRUD /educations", () => {
       .set("Accept", "application/json");
 
     expect(deleted.status).toBe(200);
+    expect(deleted.body.message).toBe("Education berhasil dihapus");
     expect(deleted.body.data).toBe(true);
 
     const list = await request(app).get("/educations").set("Accept", "application/json");

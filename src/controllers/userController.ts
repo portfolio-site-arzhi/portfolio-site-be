@@ -2,6 +2,10 @@ import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { UserService } from "../services/userService";
 import {
+  getUserSuccessMessage,
+} from "../i18n/userSuccessMessages";
+import type { UserSuccessMessageKey } from "../model";
+import {
   validateCreateUser,
   validateListUsersQuery,
   validateUpdateUser,
@@ -14,6 +18,15 @@ import {
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
+import { resolveResponseLocale } from "../helper/responseLocale";
+
+const getLocalizedUserSuccessMessage = (
+  req: Request,
+  key: UserSuccessMessageKey,
+): string => {
+  const locale = resolveResponseLocale(req.headers["accept-language"]);
+  return getUserSuccessMessage(locale, key);
+};
 
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -106,6 +119,7 @@ export class UserController {
         status: typeof input.status === "boolean" ? input.status : undefined,
       });
       res.status(201).json({
+        message: getLocalizedUserSuccessMessage(req, "USER_CREATED_SUCCESS"),
         data: {
           id: user.id,
           email: user.email,
@@ -146,6 +160,7 @@ export class UserController {
       });
 
       res.status(200).json({
+        message: getLocalizedUserSuccessMessage(req, "USER_UPDATED_SUCCESS"),
         data: {
           id: user.id,
           email: user.email,
@@ -184,6 +199,10 @@ export class UserController {
       const user = await this.userService.updateUserStatus(id, input.status);
 
       res.status(200).json({
+        message: getLocalizedUserSuccessMessage(
+          req,
+          "USER_STATUS_UPDATED_SUCCESS",
+        ),
         data: {
           id: user.id,
           email: user.email,
@@ -221,7 +240,7 @@ export class UserController {
       await this.userService.deleteUser(id);
 
       res.status(200).json({
-        message: "User berhasil dihapus",
+        message: getLocalizedUserSuccessMessage(req, "USER_DELETED_SUCCESS"),
       });
     } catch (error) {
       if (error instanceof ZodError) {

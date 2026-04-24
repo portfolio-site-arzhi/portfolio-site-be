@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { logger } from "../config";
+import { getExperienceSuccessMessage } from "../i18n/experienceSuccessMessages";
+import type { ExperienceSuccessMessageKey } from "../model";
 import {
   handleDomainError,
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
+import { resolveResponseLocale } from "../helper/responseLocale";
 import { ExperienceService } from "../services/experienceService";
 import {
   validateCreateExperience,
@@ -19,6 +22,14 @@ const formatDateOnly = (value: Date | null): string | null =>
   value ? value.toISOString().slice(0, 10) : null;
 
 const parseMonthDate = (value: string): Date => new Date(`${value}T00:00:00.000Z`);
+
+const getLocalizedExperienceSuccessMessage = (
+  req: Request,
+  key: ExperienceSuccessMessageKey,
+): string => {
+  const locale = resolveResponseLocale(req.headers["accept-language"]);
+  return getExperienceSuccessMessage(locale, key);
+};
 
 export class ExperienceController {
   constructor(private readonly experienceService: ExperienceService) {}
@@ -131,6 +142,7 @@ export class ExperienceController {
       });
 
       res.status(201).json({
+        message: getLocalizedExperienceSuccessMessage(req, "EXPERIENCE_CREATED_SUCCESS"),
         data: {
           id: experience.id,
           sort: experience.sort,
@@ -188,6 +200,7 @@ export class ExperienceController {
       });
 
       res.status(200).json({
+        message: getLocalizedExperienceSuccessMessage(req, "EXPERIENCE_UPDATED_SUCCESS"),
         data: {
           id: experience.id,
           sort: experience.sort,
@@ -238,6 +251,7 @@ export class ExperienceController {
       await this.experienceService.deleteExperience(id);
 
       res.status(200).json({
+        message: getLocalizedExperienceSuccessMessage(req, "EXPERIENCE_DELETED_SUCCESS"),
         data: true,
       });
     } catch (error) {
@@ -268,6 +282,10 @@ export class ExperienceController {
       await this.experienceService.updateExperienceSort(input.ids);
 
       res.status(200).json({
+        message: getLocalizedExperienceSuccessMessage(
+          req,
+          "EXPERIENCE_SORT_UPDATED_SUCCESS",
+        ),
         data: true,
       });
     } catch (error) {

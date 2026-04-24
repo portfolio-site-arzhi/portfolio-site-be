@@ -22,6 +22,7 @@ describe("CRUD /certifications", () => {
       });
 
     expect(response.status).toBe(201);
+    expect(response.body.message).toBe("Certification berhasil dibuat");
     expect(response.body.data).toEqual(
       expect.objectContaining({
         id: expect.any(Number),
@@ -112,6 +113,7 @@ describe("CRUD /certifications", () => {
       });
 
     expect(updated.status).toBe(200);
+    expect(updated.body.message).toBe("Certification berhasil diperbarui");
     expect(updated.body.data.name).toBe("Updated");
     expect(updated.body.data.is_active).toBe(false);
     expect(updated.body.data.description).toContain("<p>New</p>");
@@ -137,6 +139,7 @@ describe("CRUD /certifications", () => {
       .set("Accept", "application/json");
 
     expect(deleted.status).toBe(200);
+    expect(deleted.body.message).toBe("Certification berhasil dihapus");
     expect(deleted.body.data).toBe(true);
 
     const list = await request(app)

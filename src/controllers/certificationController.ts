@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { logger } from "../config";
+import { getCertificationSuccessMessage } from "../i18n/certificationSuccessMessages";
+import type { CertificationSuccessMessageKey } from "../model";
 import {
   handleDomainError,
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
+import { resolveResponseLocale } from "../helper/responseLocale";
 import { CertificationService } from "../services/certificationService";
 import {
   validateCertificationIdParam,
@@ -18,6 +21,14 @@ import {
 const formatDateOnly = (value: Date): string => value.toISOString().slice(0, 10);
 
 const parseDateOnly = (value: string): Date => new Date(`${value}T00:00:00.000Z`);
+
+const getLocalizedCertificationSuccessMessage = (
+  req: Request,
+  key: CertificationSuccessMessageKey,
+): string => {
+  const locale = resolveResponseLocale(req.headers["accept-language"]);
+  return getCertificationSuccessMessage(locale, key);
+};
 
 export class CertificationController {
   constructor(private readonly certificationService: CertificationService) {}
@@ -110,6 +121,10 @@ export class CertificationController {
       });
 
       res.status(201).json({
+        message: getLocalizedCertificationSuccessMessage(
+          req,
+          "CERTIFICATION_CREATED_SUCCESS",
+        ),
         data: {
           id: certification.id,
           name: certification.name,
@@ -160,6 +175,10 @@ export class CertificationController {
       });
 
       res.status(200).json({
+        message: getLocalizedCertificationSuccessMessage(
+          req,
+          "CERTIFICATION_UPDATED_SUCCESS",
+        ),
         data: {
           id: certification.id,
           name: certification.name,
@@ -202,6 +221,10 @@ export class CertificationController {
       await this.certificationService.deleteCertification(id);
 
       res.status(200).json({
+        message: getLocalizedCertificationSuccessMessage(
+          req,
+          "CERTIFICATION_DELETED_SUCCESS",
+        ),
         data: true,
       });
     } catch (error) {
@@ -232,6 +255,10 @@ export class CertificationController {
       await this.certificationService.updateCertificationSort(input.ids);
 
       res.status(200).json({
+        message: getLocalizedCertificationSuccessMessage(
+          req,
+          "CERTIFICATION_SORT_UPDATED_SUCCESS",
+        ),
         data: true,
       });
     } catch (error) {
@@ -256,4 +283,3 @@ export class CertificationController {
     }
   };
 }
-

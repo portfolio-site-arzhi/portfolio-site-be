@@ -35,6 +35,9 @@ describe("PATCH /users/:id/status", () => {
       });
 
     expect(updateStatusResponse.status).toBe(200);
+    expect(updateStatusResponse.body.message).toBe(
+      "Status user berhasil diperbarui",
+    );
     expect(updateStatusResponse.body.data).toEqual(
       expect.objectContaining({
         id: userId,

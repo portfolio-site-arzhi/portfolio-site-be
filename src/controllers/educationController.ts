@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { logger } from "../config";
+import { getEducationSuccessMessage } from "../i18n/educationSuccessMessages";
+import type { EducationSuccessMessageKey } from "../model";
 import {
   handleDomainError,
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
+import { resolveResponseLocale } from "../helper/responseLocale";
 import { EducationService } from "../services/educationService";
 import {
   validateCreateEducation,
@@ -19,6 +22,14 @@ const formatDateOnly = (value: Date | null): string | null =>
   value ? value.toISOString().slice(0, 10) : null;
 
 const parseDateOnly = (value: string): Date => new Date(`${value}T00:00:00.000Z`);
+
+const getLocalizedEducationSuccessMessage = (
+  req: Request,
+  key: EducationSuccessMessageKey,
+): string => {
+  const locale = resolveResponseLocale(req.headers["accept-language"]);
+  return getEducationSuccessMessage(locale, key);
+};
 
 export class EducationController {
   constructor(private readonly educationService: EducationService) {}
@@ -123,6 +134,7 @@ export class EducationController {
       });
 
       res.status(201).json({
+        message: getLocalizedEducationSuccessMessage(req, "EDUCATION_CREATED_SUCCESS"),
         data: {
           id: education.id,
           institution_name: education.institution_name,
@@ -192,6 +204,7 @@ export class EducationController {
       });
 
       res.status(200).json({
+        message: getLocalizedEducationSuccessMessage(req, "EDUCATION_UPDATED_SUCCESS"),
         data: {
           id: education.id,
           institution_name: education.institution_name,
@@ -238,6 +251,7 @@ export class EducationController {
       await this.educationService.deleteEducation(id);
 
       res.status(200).json({
+        message: getLocalizedEducationSuccessMessage(req, "EDUCATION_DELETED_SUCCESS"),
         data: true,
       });
     } catch (error) {
@@ -268,6 +282,10 @@ export class EducationController {
       await this.educationService.updateEducationSort(input.ids);
 
       res.status(200).json({
+        message: getLocalizedEducationSuccessMessage(
+          req,
+          "EDUCATION_SORT_UPDATED_SUCCESS",
+        ),
         data: true,
       });
     } catch (error) {
@@ -292,4 +310,3 @@ export class EducationController {
     }
   };
 }
-

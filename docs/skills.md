@@ -9,6 +9,7 @@ Konsep data:
 - Child data disimpan di table `skills`.
 - API CMS tetap menggunakan resource utama `/skills`.
 - Urutan child (`skills.display_order`) mengikuti urutan array `skills` saat create/update parent.
+- Untuk endpoint non-GET (`POST`, `PUT`, `PATCH`, `DELETE`) backend mengembalikan field `message` yang mendukung `Accept-Language` (`id` / `en`). Jika header tidak dikirim atau tidak didukung, default ke `id`.
 
 List skills (CMS)
 -----------------
@@ -52,6 +53,7 @@ Contoh cURL:
 ```bash
 curl -X POST "http://localhost:9000/skills" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Frontend",
@@ -80,6 +82,7 @@ Contoh cURL:
 ```bash
 curl -X PUT "http://localhost:9000/skills/1" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Frontend Engineering",
@@ -104,7 +107,8 @@ Contoh cURL:
 
 ```bash
 curl -X DELETE "http://localhost:9000/skills/1" \
-  -H "Accept: application/json"
+  -H "Accept: application/json" \
+  -H "Accept-Language: id"
 ```
 
 Update sort skills (CMS)
@@ -122,6 +126,7 @@ Contoh cURL:
 ```bash
 curl -X PATCH "http://localhost:9000/skills/sort" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   -d '{
     "ids": [3, 1, 2]

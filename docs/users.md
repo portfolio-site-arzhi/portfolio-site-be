@@ -5,6 +5,10 @@ Endpoint ini digunakan untuk mengelola data pengguna di backend.
 
 Semua contoh cURL di bawah tidak menggunakan header Cookie. Autentikasi dan otorisasi bisa ditambahkan kemudian sesuai kebutuhan.
 
+Untuk endpoint non-GET (`POST`, `PUT`, `PATCH`, `DELETE`) yang mengembalikan field `message`, backend mendukung header `Accept-Language` (`id` atau `en`).
+
+- Jika header `Accept-Language` tidak dikirim atau nilainya tidak didukung, backend akan default ke bahasa Indonesia (`id`).
+
 Daftar pengguna
 ---------------
 
@@ -108,6 +112,7 @@ Contoh cURL:
 ```bash
 curl -X POST "http://localhost:9000/users" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   --data-raw '{
     "email": "user@example.com",
@@ -120,6 +125,7 @@ Respons sukses (201):
 
 ```json
 {
+  "message": "User berhasil dibuat",
   "data": {
     "id": 1,
     "email": "user@example.com",
@@ -169,6 +175,7 @@ Contoh cURL:
 ```bash
 curl -X PUT "http://localhost:9000/users/1" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   --data-raw '{
     "name": "Nama Baru"
@@ -179,6 +186,7 @@ Respons sukses:
 
 ```json
 {
+  "message": "User berhasil diperbarui",
   "data": {
     "id": 1,
     "email": "user@example.com",
@@ -210,6 +218,7 @@ Contoh cURL:
 ```bash
 curl -X PATCH "http://localhost:9000/users/1/status" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   --data-raw '{
     "status": false
@@ -220,6 +229,7 @@ Respons sukses:
 
 ```json
 {
+  "message": "Status user berhasil diperbarui",
   "data": {
     "id": 1,
     "email": "user@example.com",
@@ -252,7 +262,8 @@ Contoh cURL:
 
 ```bash
 curl -X DELETE "http://localhost:9000/users/1" \
-  -H "Accept: application/json"
+  -H "Accept: application/json" \
+  -H "Accept-Language: id"
 ```
 
 Respons sukses:

@@ -17,6 +17,7 @@ describe("POST /users", () => {
       });
 
     expect(response.status).toBe(201);
+    expect(response.body.message).toBe("User berhasil dibuat");
     expect(response.body.data).toEqual(
       expect.objectContaining({
         id: expect.any(Number),
@@ -25,6 +26,20 @@ describe("POST /users", () => {
         status: true,
       }),
     );
+  });
+
+  it("mengembalikan message sukses bahasa inggris jika Accept-Language=en", async () => {
+    const response = await request(app)
+      .post("/users")
+      .set("Accept", "application/json")
+      .set("Accept-Language", "en-US")
+      .send({
+        email: `create-user-en-${Date.now()}@example.com`,
+        name: "Create User EN",
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.message).toBe("User created successfully");
   });
 
   it("mengembalikan 400 jika payload tidak valid", async () => {
@@ -53,6 +68,7 @@ describe("POST /users", () => {
       });
 
     expect(first.status).toBe(201);
+    expect(first.body.message).toBe("User berhasil dibuat");
 
     const second = await request(app)
       .post("/users")

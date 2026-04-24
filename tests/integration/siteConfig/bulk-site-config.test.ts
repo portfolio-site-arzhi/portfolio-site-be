@@ -47,6 +47,7 @@ describe("POST /site-configs/bulk", () => {
       });
 
     expect(response.status).toBe(200);
+    expect(response.body.message).toBe("Konfigurasi situs berhasil diperbarui");
     expect(response.body.data.system).toEqual({
       primary_color: "#1976D2",
       secondary_color: "#42A5F5",

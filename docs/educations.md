@@ -9,6 +9,7 @@ Catatan penting:
 - Backend melakukan sanitasi HTML (menghapus script/event handler) sebelum disimpan.
 - Sorting di CMS menggunakan vuedraggable: backend menyediakan endpoint update sort berdasarkan urutan `ids` array.
 - `start_date` dan `end_date` menggunakan format `YYYY-MM-01` (day selalu `01` untuk representasi bulan).
+- Untuk endpoint non-GET (`POST`, `PUT`, `PATCH`, `DELETE`) backend mengembalikan field `message` yang mendukung `Accept-Language` (`id` / `en`). Jika header tidak dikirim atau tidak didukung, default ke `id`.
 
 List educations (CMS)
 --------------------
@@ -47,6 +48,7 @@ Contoh cURL:
 ```bash
 curl -X POST "http://localhost:9000/educations" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   -d '{
     "institution_name": "Institut Teknologi",
@@ -74,6 +76,7 @@ Contoh cURL:
 ```bash
 curl -X PUT "http://localhost:9000/educations/1" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   -d '{
     "description": "<p>Update deskripsi</p>",
@@ -90,7 +93,8 @@ Contoh cURL:
 
 ```bash
 curl -X DELETE "http://localhost:9000/educations/1" \
-  -H "Accept: application/json"
+  -H "Accept: application/json" \
+  -H "Accept-Language: id"
 ```
 
 Update sort educations (CMS)
@@ -104,6 +108,7 @@ Contoh cURL:
 ```bash
 curl -X PATCH "http://localhost:9000/educations/sort" \
   -H "Accept: application/json" \
+  -H "Accept-Language: id" \
   -H "Content-Type: application/json" \
   -d '{
     "ids": [3, 1, 2]

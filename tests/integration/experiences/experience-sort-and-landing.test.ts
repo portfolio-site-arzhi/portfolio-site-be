@@ -63,6 +63,7 @@ describe("PATCH /experiences/sort dan GET /landing/experiences", () => {
       .send({ ids });
 
     expect(updated.status).toBe(200);
+    expect(updated.body.message).toBe("Urutan experience berhasil diperbarui");
     expect(updated.body.data).toBe(true);
 
     const list = await request(app).get("/experiences").set("Accept", "application/json");

@@ -44,6 +44,7 @@ describe("PUT /users/:id", () => {
       });
 
     expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.message).toBe("User berhasil diperbarui");
     expect(updateResponse.body.data.name).toBe("New Name");
 
     const storedUser = await prisma.user.findUnique({

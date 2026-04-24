@@ -42,6 +42,7 @@ describe("PATCH /skills/sort dan GET /landing/skills", () => {
       .send({ ids });
 
     expect(updated.status).toBe(200);
+    expect(updated.body.message).toBe("Urutan skill berhasil diperbarui");
     expect(updated.body.data).toBe(true);
 
     const list = await request(app).get("/skills").set("Accept", "application/json");

@@ -22,6 +22,7 @@ describe("CRUD /skills", () => {
       });
 
     expect(response.status).toBe(201);
+    expect(response.body.message).toBe("Skill berhasil dibuat");
     expect(response.body.data).toEqual(
       expect.objectContaining({
         id: expect.any(Number),
@@ -99,6 +100,7 @@ describe("CRUD /skills", () => {
       });
 
     expect(updated.status).toBe(200);
+    expect(updated.body.message).toBe("Skill berhasil diperbarui");
     expect(updated.body.data.name).toBe("Frontend Engineering");
     expect(updated.body.data.skills.map((x: { name: string }) => x.name)).toEqual([
       "TypeScript",
@@ -145,6 +147,7 @@ describe("CRUD /skills", () => {
       });
 
     expect(cleared.status).toBe(200);
+    expect(cleared.body.message).toBe("Skill berhasil diperbarui");
     expect(cleared.body.data.skills.length).toBe(0);
 
     const deleted = await request(app)
@@ -152,6 +155,7 @@ describe("CRUD /skills", () => {
       .set("Accept", "application/json");
 
     expect(deleted.status).toBe(200);
+    expect(deleted.body.message).toBe("Skill berhasil dihapus");
     expect(deleted.body.data).toBe(true);
   });
 });

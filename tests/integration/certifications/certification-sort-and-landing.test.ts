@@ -54,6 +54,7 @@ describe("PATCH /certifications/sort dan GET /landing/certifications", () => {
       .send({ ids });
 
     expect(updated.status).toBe(200);
+    expect(updated.body.message).toBe("Urutan certification berhasil diperbarui");
     expect(updated.body.data).toBe(true);
 
     const list = await request(app)

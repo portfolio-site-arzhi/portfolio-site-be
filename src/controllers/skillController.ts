@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { logger } from "../config";
+import { getSkillSuccessMessage } from "../i18n/skillSuccessMessages";
+import type { SkillSuccessMessageKey } from "../model";
 import {
   handleDomainError,
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
+import { resolveResponseLocale } from "../helper/responseLocale";
 import { SkillService } from "../services/skillService";
 import {
   validateCreateSkill,
@@ -14,6 +17,14 @@ import {
   validateUpdateSkill,
   validateUpdateSkillSort,
 } from "../validation/skillValidation";
+
+const getLocalizedSkillSuccessMessage = (
+  req: Request,
+  key: SkillSuccessMessageKey,
+): string => {
+  const locale = resolveResponseLocale(req.headers["accept-language"]);
+  return getSkillSuccessMessage(locale, key);
+};
 
 export class SkillController {
   constructor(private readonly skillService: SkillService) {}
@@ -108,6 +119,7 @@ export class SkillController {
       });
 
       res.status(201).json({
+        message: getLocalizedSkillSuccessMessage(req, "SKILL_CREATED_SUCCESS"),
         data: {
           id: skill.id,
           name: skill.name,
@@ -148,6 +160,7 @@ export class SkillController {
       });
 
       res.status(200).json({
+        message: getLocalizedSkillSuccessMessage(req, "SKILL_UPDATED_SUCCESS"),
         data: {
           id: skill.id,
           name: skill.name,
@@ -193,6 +206,7 @@ export class SkillController {
       await this.skillService.deleteSkill(id);
 
       res.status(200).json({
+        message: getLocalizedSkillSuccessMessage(req, "SKILL_DELETED_SUCCESS"),
         data: true,
       });
     } catch (error) {
@@ -227,6 +241,7 @@ export class SkillController {
       await this.skillService.updateSkillSort(input.ids);
 
       res.status(200).json({
+        message: getLocalizedSkillSuccessMessage(req, "SKILL_SORT_UPDATED_SUCCESS"),
         data: true,
       });
     } catch (error) {

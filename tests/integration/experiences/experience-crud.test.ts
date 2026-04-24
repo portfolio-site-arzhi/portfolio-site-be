@@ -26,6 +26,7 @@ describe("CRUD /experiences", () => {
       });
 
     expect(response.status).toBe(201);
+    expect(response.body.message).toBe("Experience berhasil dibuat");
     expect(response.body.data).toEqual(
       expect.objectContaining({
         id: expect.any(Number),
@@ -145,6 +146,7 @@ describe("CRUD /experiences", () => {
       });
 
     expect(updated.status).toBe(200);
+    expect(updated.body.message).toBe("Experience berhasil diperbarui");
     expect(updated.body.data.is_published).toBe(true);
     expect(updated.body.data.description_id).toContain("<p>New</p>");
     expect(updated.body.data.description_id).not.toContain("<script");
@@ -174,6 +176,7 @@ describe("CRUD /experiences", () => {
       .set("Accept", "application/json");
 
     expect(deleted.status).toBe(200);
+    expect(deleted.body.message).toBe("Experience berhasil dihapus");
     expect(deleted.body.data).toBe(true);
 
     const list = await request(app).get("/experiences").set("Accept", "application/json");

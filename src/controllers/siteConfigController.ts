@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { SiteConfigService } from "../services/siteConfigService";
 import { SiteConfigLandingService } from "../services/siteConfigLandingService";
+import { getSiteConfigSuccessMessage } from "../i18n/siteConfigSuccessMessages";
+import type { SiteConfigSuccessMessageKey } from "../model";
 import {
   validateBulkSiteConfig,
   validateSiteConfigFileUpload,
@@ -13,6 +15,15 @@ import {
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
+import { resolveResponseLocale } from "../helper/responseLocale";
+
+const getLocalizedSiteConfigSuccessMessage = (
+  req: Request,
+  key: SiteConfigSuccessMessageKey,
+): string => {
+  const locale = resolveResponseLocale(req.headers["accept-language"]);
+  return getSiteConfigSuccessMessage(locale, key);
+};
 
 export class SiteConfigController {
   constructor(
@@ -68,6 +79,10 @@ export class SiteConfigController {
       const data = await this.siteConfigLandingService.getLandingPageData();
 
       res.status(200).json({
+        message: getLocalizedSiteConfigSuccessMessage(
+          req,
+          "SITE_CONFIG_BULK_UPDATED_SUCCESS",
+        ),
         data,
       });
     } catch (error) {
