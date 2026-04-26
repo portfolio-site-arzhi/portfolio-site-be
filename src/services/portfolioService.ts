@@ -72,7 +72,7 @@ export class PortfolioService {
     contributionEn: string | null;
     outcome: string | null;
     outcomeEn: string | null;
-    image: string;
+    image: string | null;
     role: string | null;
     liveUrl: string | null;
     githubUrl: string | null;

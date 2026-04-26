@@ -133,7 +133,7 @@ export const validateLandingPortfoliosQuery = (
 export const validateCreatePortfolioFileUpload = (params: {
   fileValidationError: string | undefined;
   filename: string | undefined;
-}): string => {
+}): string | undefined => {
   const { fileValidationError, filename } = params;
 
   if (fileValidationError) {
@@ -141,16 +141,6 @@ export const validateCreatePortfolioFileUpload = (params: {
       {
         code: "custom",
         message: fileValidationError,
-        path: ["image"],
-      },
-    ]);
-  }
-
-  if (!filename) {
-    throw new ZodError([
-      {
-        code: "custom",
-        message: "Image is required",
         path: ["image"],
       },
     ]);

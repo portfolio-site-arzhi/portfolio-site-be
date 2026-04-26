@@ -161,7 +161,7 @@ export class PortfolioController {
         (req as Request & { fileValidationError?: string }).fileValidationError ??
         undefined;
       uploadedImageFilename = getUploadedImageFilename(req);
-      const requiredImageFilename = validateCreatePortfolioFileUpload({
+      const validatedImageFilename = validateCreatePortfolioFileUpload({
         fileValidationError,
         filename: uploadedImageFilename,
       });
@@ -175,7 +175,10 @@ export class PortfolioController {
         contributionEn: input.contribution_en ?? null,
         outcome: input.outcome ?? null,
         outcomeEn: input.outcome_en ?? null,
-        image: getPortfolioImagePath(requiredImageFilename),
+        image:
+          typeof validatedImageFilename === "string"
+            ? getPortfolioImagePath(validatedImageFilename)
+            : null,
         role: input.role ?? null,
         liveUrl: input.live_url ?? null,
         githubUrl: input.github_url ?? null,

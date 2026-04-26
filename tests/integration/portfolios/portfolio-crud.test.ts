@@ -78,15 +78,20 @@ describe("CRUD /portfolios", () => {
     expect(response.body.data.outcome_en).not.toContain("onerror");
   });
 
-  it("mengembalikan 400 jika create tidak mengirim image", async () => {
+  it("membuat portfolio baru tanpa image", async () => {
     const response = await postPortfolioWithoutImage({
       title: "Portfolio No Image",
       description: "Desc",
       stacks: [],
     });
 
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toContain("Image is required");
+    expect(response.status).toBe(201);
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        slug: "portfolio-no-image",
+        image: null,
+      }),
+    );
   });
 
   it("mengabaikan slug dari payload frontend dan memakai title", async () => {

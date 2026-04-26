@@ -6,11 +6,13 @@ import type {
   ResponseLocale,
   SkillLandingGroupItem,
 } from "../model";
+import { htmlToPlainText } from "../helper/htmlToPlainText";
 import { pickLocalizedValue } from "../helper/localizedText";
 import {
   createPdfBuffer,
   writePdfBulletList,
   writePdfParagraph,
+  writePdfRichText,
   writePdfSectionTitle,
   writePdfTitle,
 } from "../helper/pdfDocument";
@@ -45,7 +47,7 @@ const buildSummaryParagraphs = (
     params.homeDescription ? pickLocalizedValue(locale, params.homeDescription) : null,
     params.aboutMe ? pickLocalizedValue(locale, params.aboutMe) : null,
   ]
-    .map((value) => value?.trim())
+    .map((value) => htmlToPlainText(value))
     .filter((value): value is string => Boolean(value));
 
   return Array.from(new Set(summaryValues));
@@ -55,7 +57,7 @@ const buildExperienceLines = (
   locale: ResponseLocale,
   experience: ExperienceLandingItem,
 ): string[] => {
-  const description = pickLocalizedValue(locale, experience.description);
+  const description = htmlToPlainText(pickLocalizedValue(locale, experience.description));
   const skills =
     experience.skills.length > 0
       ? `Skills: ${experience.skills.map((skill) => skill.skill_name).join(", ")}`
@@ -70,7 +72,7 @@ const buildEducationLines = (
 ): string[] => {
   const degree = pickLocalizedValue(locale, education.degree);
   const fieldOfStudy = pickLocalizedValue(locale, education.field_of_study);
-  const description = pickLocalizedValue(locale, education.description);
+  const description = htmlToPlainText(pickLocalizedValue(locale, education.description));
   const header = joinNonEmpty([degree, fieldOfStudy]);
   const details = joinNonEmpty([
     formatDateRange({
@@ -88,7 +90,7 @@ const buildCertificationLines = (
   certification: CertificationLandingItem,
 ): string[] => {
   const title = pickLocalizedValue(locale, certification.name);
-  const description = pickLocalizedValue(locale, certification.description);
+  const description = htmlToPlainText(pickLocalizedValue(locale, certification.description));
 
   return [
     joinNonEmpty([title, certification.issuing_organization, certification.issue_date]),
@@ -137,26 +139,31 @@ export class CvPdfExportService {
         keywords: ["cv", "ats", "resume", locale],
       },
       (doc) => {
+        const primaryContact = joinNonEmpty([
+          siteConfig.home?.position ?? null,
+          siteConfig.about?.email ?? null,
+          siteConfig.about?.address ?? null,
+        ]);
+        const socialLinks = joinNonEmpty([
+          siteConfig.footer?.linkedin ? `LinkedIn: ${siteConfig.footer.linkedin}` : null,
+          siteConfig.footer?.github ? `GitHub: ${siteConfig.footer.github}` : null,
+        ]);
+
         writePdfTitle(
           doc,
           displayName,
-          joinNonEmpty([
-            siteConfig.home?.position ?? null,
-            siteConfig.about?.email ?? null,
-            siteConfig.about?.address ?? null,
-          ]),
+          primaryContact,
         );
 
-        writePdfParagraph(
-          doc,
-          `Exported at ${new Date().toISOString().slice(0, 10)}`,
-          { fontSize: 9.5, paragraphGap: 10 },
-        );
+        writePdfParagraph(doc, socialLinks, {
+          fontSize: 9.5,
+          paragraphGap: 10,
+        });
 
         if (summaryParagraphs.length > 0) {
           writePdfSectionTitle(doc, "Professional Summary");
           for (const paragraph of summaryParagraphs) {
-            writePdfParagraph(doc, paragraph);
+            writePdfRichText(doc, paragraph);
           }
         }
 
@@ -173,7 +180,7 @@ export class CvPdfExportService {
               `${pickLocalizedValue(locale, experience.role) ?? "Role"} - ${experience.company_name}`,
               { fontSize: 11, paragraphGap: 2 },
             );
-            writePdfParagraph(
+            writePdfRichText(
               doc,
               joinNonEmpty([
                 formatDateRange({
@@ -186,7 +193,7 @@ export class CvPdfExportService {
               { fontSize: 9.5, paragraphGap: 4 },
             );
             for (const line of buildExperienceLines(locale, experience)) {
-              writePdfParagraph(doc, line);
+              writePdfRichText(doc, line);
             }
             doc.moveDown(0.2);
           }
@@ -195,12 +202,12 @@ export class CvPdfExportService {
         if (educations.length > 0) {
           writePdfSectionTitle(doc, "Education");
           for (const education of educations) {
-            writePdfParagraph(doc, education.institution_name, {
+            writePdfRichText(doc, education.institution_name, {
               fontSize: 11,
               paragraphGap: 2,
             });
             for (const line of buildEducationLines(locale, education)) {
-              writePdfParagraph(doc, line);
+              writePdfRichText(doc, line);
             }
             doc.moveDown(0.2);
           }
@@ -210,7 +217,7 @@ export class CvPdfExportService {
           writePdfSectionTitle(doc, "Certifications");
           for (const certification of certifications) {
             for (const line of buildCertificationLines(locale, certification)) {
-              writePdfParagraph(doc, line);
+              writePdfRichText(doc, line);
             }
             doc.moveDown(0.2);
           }

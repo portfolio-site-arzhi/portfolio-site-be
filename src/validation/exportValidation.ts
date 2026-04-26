@@ -9,6 +9,6 @@ export const validatePdfExportQuery = (query: unknown): PdfExportQuery => {
   const parsed = exportQuerySchema.parse(query);
 
   return {
-    locale: parsed.locale ?? "id",
+    locale: parsed.locale ?? "en",
   };
 };

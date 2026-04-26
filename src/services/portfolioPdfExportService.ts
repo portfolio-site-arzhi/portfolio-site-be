@@ -1,14 +1,17 @@
 import type { PdfExportResult, Portfolio, ResponseLocale } from "../model";
 import { htmlToPlainText } from "../helper/htmlToPlainText";
+import { resolvePdfRenderableUploadPath } from "../helper/localUploadPath";
 import { pickLocalizedString } from "../helper/localizedText";
 import {
   createPdfBuffer,
+  type PdfDocument,
   writePdfBulletList,
+  writePdfImage,
   writePdfParagraph,
+  writePdfRichText,
   writePdfSectionTitle,
   writePdfTitle,
 } from "../helper/pdfDocument";
-import { withBaseUrl } from "../helper/publicUrl";
 import { PortfolioService } from "./portfolioService";
 
 const formatDateTime = (value: Date | null): string | null =>
@@ -16,6 +19,21 @@ const formatDateTime = (value: Date | null): string | null =>
 
 const getPortfolioStatus = (portfolio: Portfolio): string =>
   portfolio.is_published ? "Published" : "Draft";
+
+const writePortfolioImage = (
+  doc: PdfDocument,
+  imagePath: string | null,
+): void => {
+  const localPath = resolvePdfRenderableUploadPath(imagePath);
+  if (!localPath) {
+    return;
+  }
+
+  writePdfSectionTitle(doc, "Image");
+  writePdfImage(doc, localPath, {
+    fit: [doc.page.width - doc.page.margins.left - doc.page.margins.right, 220],
+  });
+};
 
 export class PortfolioPdfExportService {
   constructor(private readonly portfolioService: PortfolioService) {}
@@ -31,12 +49,10 @@ export class PortfolioPdfExportService {
         keywords: ["portfolio", "pdf", "cms", locale],
       },
       (doc) => {
-        writePdfTitle(
+      writePdfTitle(
           doc,
           "Portfolio Detail Collection",
-          `Total projects: ${portfolios.length} | Exported at ${new Date()
-            .toISOString()
-            .slice(0, 10)}`,
+          `Total projects: ${portfolios.length}`,
         );
 
         if (portfolios.length === 0) {
@@ -75,7 +91,6 @@ export class PortfolioPdfExportService {
           writePdfParagraph(
             doc,
             [
-              portfolio.image ? `Image: ${withBaseUrl(portfolio.image)}` : null,
               portfolio.published_at
                 ? `Published At: ${formatDateTime(portfolio.published_at)}`
                 : null,
@@ -86,17 +101,19 @@ export class PortfolioPdfExportService {
           );
 
           writePdfSectionTitle(doc, "Description");
-          writePdfParagraph(
+          writePdfRichText(
             doc,
-            pickLocalizedString(
-              locale,
-              portfolio.description,
-              portfolio.description_en,
+            htmlToPlainText(
+              pickLocalizedString(
+                locale,
+                portfolio.description,
+                portfolio.description_en,
+              ),
             ) ?? "-",
           );
 
           writePdfSectionTitle(doc, "Contribution");
-          writePdfParagraph(
+          writePdfRichText(
             doc,
             htmlToPlainText(
               pickLocalizedString(
@@ -108,7 +125,7 @@ export class PortfolioPdfExportService {
           );
 
           writePdfSectionTitle(doc, "Outcome");
-          writePdfParagraph(
+          writePdfRichText(
             doc,
             htmlToPlainText(
               pickLocalizedString(locale, portfolio.outcome, portfolio.outcome_en),
@@ -120,6 +137,8 @@ export class PortfolioPdfExportService {
             doc,
             portfolio.stacks.map((stack) => stack.name),
           );
+
+          writePortfolioImage(doc, portfolio.image);
         });
       },
     );

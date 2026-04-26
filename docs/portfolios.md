@@ -10,6 +10,7 @@ Catatan penting:
 - Create dan update portfolio menggunakan `multipart/form-data`.
 - Field file gambar adalah `image`; backend menyimpan path upload ke field DB `image`.
 - Data non-file dikirim sebagai field multipart `payload` berisi JSON string.
+- Field `image` bersifat optional saat create. Cocok untuk portfolio/service project yang tidak punya screenshot.
 - Field `slug` tidak dikirim dari frontend. Backend membuat slug otomatis dari `title`, misalnya `Ecommerce Dashboard` menjadi `ecommerce-dashboard`.
 - Jika hasil slug dari `title` sudah dipakai portfolio lain, backend menambahkan suffix angka seperti `ecommerce-dashboard-2`.
 - Upload gambar mengikuti aturan upload project: JPG/JPEG, PNG, atau WebP.
@@ -57,7 +58,7 @@ Create portfolio (CMS)
 - Content-Type: `multipart/form-data`
 - Multipart fields:
   - `payload`: JSON string berisi data portfolio selain gambar.
-  - `image`: file gambar portfolio. Wajib saat create.
+  - `image`: file gambar portfolio. Optional.
 
 Catatan:
 
@@ -90,6 +91,31 @@ curl -X POST "http://localhost:9000/portfolios" \
     ]
   }' \
   -F "image=@./sample/portfolio.png;type=image/png"
+```
+
+Contoh cURL create tanpa gambar:
+
+```bash
+curl -X POST "http://localhost:9000/portfolios" \
+  -H "Accept: application/json" \
+  -H "Accept-Language: id" \
+  -F 'payload={
+    "title": "Internal Notification Service",
+    "description": "Service internal untuk notifikasi multi channel",
+    "description_en": "Internal service for multi-channel notifications",
+    "contribution": "<p>Membangun arsitektur service dan queue worker</p>",
+    "contribution_en": "<p>Built service architecture and queue workers</p>",
+    "outcome": "<p>Mempercepat pengiriman notifikasi sistem</p>",
+    "outcome_en": "<p>Improved system notification delivery speed</p>",
+    "role": "Backend Engineer",
+    "github_url": "https://github.com/example/internal-notification-service",
+    "is_published": true,
+    "published_at": "2026-04-24T09:00:00.000Z",
+    "stacks": [
+      { "name": "Node.js" },
+      { "name": "Redis" }
+    ]
+  }'
 ```
 
 Update portfolio (CMS)

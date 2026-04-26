@@ -130,3 +130,131 @@ export const writePdfBulletList = (
       });
   }
 };
+
+export const writePdfImage = (
+  doc: PdfDocument,
+  source: string | Buffer | null | undefined,
+  options?: {
+    fit?: [number, number];
+    align?: "center" | "right";
+    valign?: "center" | "bottom";
+    spacingAfter?: number;
+  },
+): boolean => {
+  if (!source) {
+    return false;
+  }
+
+  const fit = options?.fit ?? [
+    doc.page.width - doc.page.margins.left - doc.page.margins.right,
+    220,
+  ];
+
+  ensurePdfSpace(doc, fit[1] + 18);
+
+  try {
+    doc.image(source, {
+      fit,
+      align: options?.align ?? "center",
+      valign: options?.valign ?? "center",
+    });
+  } catch {
+    return false;
+  }
+
+  if (options?.spacingAfter) {
+    doc.moveDown(options.spacingAfter);
+  }
+  return true;
+};
+
+type PdfTextBlock =
+  | {
+      type: "paragraph";
+      text: string;
+    }
+  | {
+      type: "bullets";
+      items: string[];
+    };
+
+const parsePdfTextBlocks = (value: string): PdfTextBlock[] => {
+  const lines = value.split("\n").map((line) => line.trim());
+  const blocks: PdfTextBlock[] = [];
+  let paragraphLines: string[] = [];
+  let bulletItems: string[] = [];
+
+  const flushParagraph = () => {
+    if (!paragraphLines.length) {
+      return;
+    }
+
+    blocks.push({
+      type: "paragraph",
+      text: paragraphLines.join(" "),
+    });
+    paragraphLines = [];
+  };
+
+  const flushBullets = () => {
+    if (!bulletItems.length) {
+      return;
+    }
+
+    blocks.push({
+      type: "bullets",
+      items: [...bulletItems],
+    });
+    bulletItems = [];
+  };
+
+  for (const line of lines) {
+    if (!line) {
+      flushParagraph();
+      flushBullets();
+      continue;
+    }
+
+    if (line.startsWith("- ")) {
+      flushParagraph();
+      bulletItems.push(line.slice(2).trim());
+      continue;
+    }
+
+    flushBullets();
+    paragraphLines.push(line);
+  }
+
+  flushParagraph();
+  flushBullets();
+
+  return blocks;
+};
+
+export const writePdfRichText = (
+  doc: PdfDocument,
+  value: string | null | undefined,
+  options?: {
+    fontSize?: number;
+    paragraphGap?: number;
+  },
+): void => {
+  if (!value) {
+    return;
+  }
+
+  const blocks = parsePdfTextBlocks(value);
+
+  if (!blocks.length) {
+    return;
+  }
+
+  for (const block of blocks) {
+    if (block.type === "bullets") {
+      writePdfBulletList(doc, block.items);
+      continue;
+    }
+
+    writePdfParagraph(doc, block.text, options);
+  }
+};

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import request from "supertest";
 import { app } from "../../../src";
 import { getPrisma } from "../../../src/config";
@@ -30,6 +32,15 @@ const extractPdfText = (buffer: Buffer): string =>
 const normalizePdfAssertion = (value: string): string =>
   value.replace(/[^a-zA-Z0-9@.:/-]+/g, "").toLowerCase();
 
+const TEST_PORTFOLIO_IMAGE_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAANSURBVBhXY/jPwPAfAAUAAf+mXJtdAAAAAElFTkSuQmCC";
+
+const removeFileIfExists = (filePath: string): void => {
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
+
 describe("GET /exports/*.pdf", () => {
   beforeEach(async () => {
     await resetDatabase();
@@ -48,11 +59,13 @@ describe("GET /exports/*.pdf", () => {
         { type: "home", locale: null, key: "name", value: "John Doe", created_by: 0, updated_by: 0 },
         { type: "home", locale: null, key: "position", value: "Backend Engineer", created_by: 0, updated_by: 0 },
         { type: "home", locale: "id", key: "description", value: "Ringkasan profil backend engineer", created_by: 0, updated_by: 0 },
-        { type: "home", locale: "en", key: "description", value: "Professional backend engineer summary", created_by: 0, updated_by: 0 },
+        { type: "home", locale: "en", key: "description", value: "   ", created_by: 0, updated_by: 0 },
         { type: "about", locale: null, key: "email", value: "john@example.com", created_by: 0, updated_by: 0 },
         { type: "about", locale: null, key: "address", value: "Jakarta Indonesia", created_by: 0, updated_by: 0 },
         { type: "about", locale: "id", key: "about_me", value: "Tentang saya backend engineer", created_by: 0, updated_by: 0 },
         { type: "about", locale: "en", key: "about_me", value: "About me backend engineer", created_by: 0, updated_by: 0 },
+        { type: "footer", locale: null, key: "linkedin", value: "https://linkedin.com/in/johndoe", created_by: 0, updated_by: 0 },
+        { type: "footer", locale: null, key: "github", value: "https://github.com/johndoe", created_by: 0, updated_by: 0 },
       ],
     });
 
@@ -87,8 +100,8 @@ describe("GET /exports/*.pdf", () => {
         start_date: new Date("2024-01-01"),
         end_date: null,
         is_current: true,
-        description_id: "Membangun API internal",
-        description_en: "Built internal APIs",
+        description_id: "<ul><li><p>Membangun API internal</p></li><li><p>Meningkatkan performa query</p></li></ul>",
+        description_en: "<ul><li><p>Built internal APIs</p></li><li><p>Improved query performance</p></li></ul>",
         created_by: 0,
         updated_by: 0,
         skills: {
@@ -139,14 +152,14 @@ describe("GET /exports/*.pdf", () => {
     });
 
     const response = await request(app)
-      .get("/exports/cv?locale=id")
+      .get("/exports/cv")
       .set("Accept", "application/pdf")
       .buffer(true)
       .parse(binaryParser);
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toContain("application/pdf");
-    expect(response.headers["content-disposition"]).toContain("cv-ats-id.pdf");
+    expect(response.headers["content-disposition"]).toContain("cv-ats-en.pdf");
     expect(Buffer.isBuffer(response.body)).toBe(true);
     expect(response.body.slice(0, 5).toString("latin1")).toBe("%PDF-");
 
@@ -154,10 +167,19 @@ describe("GET /exports/*.pdf", () => {
     expect(pdfText).toContain(normalizePdfAssertion("John Doe"));
     expect(pdfText).toContain(normalizePdfAssertion("Jakarta Indonesia"));
     expect(pdfText).toContain(normalizePdfAssertion("Backend Engineer"));
+    expect(pdfText).toContain(normalizePdfAssertion("Ringkasan profil backend engineer"));
+    expect(pdfText).toContain(normalizePdfAssertion("About me backend engineer"));
+    expect(pdfText).toContain(normalizePdfAssertion("https://linkedin.com/in/johndoe"));
+    expect(pdfText).toContain(normalizePdfAssertion("https://github.com/johndoe"));
+    expect(pdfText).toContain(normalizePdfAssertion("Built internal APIs"));
+    expect(pdfText).toContain(normalizePdfAssertion("Improved query performance"));
+    expect(pdfText).not.toContain(normalizePdfAssertion("Exported at"));
   });
 
   it("mengembalikan PDF detail portfolio", async () => {
     const prisma = getPrisma();
+    const imageDir = path.join(process.cwd(), "uploads", "portfolio");
+    const imagePath = path.join(imageDir, "project-alpha.png");
 
     await prisma.portfolio.create({
       data: {
@@ -165,10 +187,10 @@ describe("GET /exports/*.pdf", () => {
         title: "Project Alpha",
         description: "Portfolio deskripsi indonesia",
         description_en: "Portfolio description english",
-        contribution: "<p>Membangun API utama</p>",
-        contribution_en: "<p>Built the core API</p>",
+        contribution: "<ul><li><p>Membangun API utama</p></li><li><p>Merapikan arsitektur service</p></li></ul>",
+        contribution_en: "   ",
         outcome: "<p>Latensi turun signifikan</p>",
-        outcome_en: "<p>Latency dropped significantly</p>",
+        outcome_en: "<ul><li><p>Latency dropped significantly</p></li><li><p>Improved release confidence</p></li></ul>",
         image: "/uploads/portfolio/project-alpha.png",
         role: "Lead Engineer",
         live_url: "https://demo.example.com/project-alpha",
@@ -191,21 +213,35 @@ describe("GET /exports/*.pdf", () => {
       },
     });
 
-    const response = await request(app)
-      .get("/exports/portfolios?locale=en")
-      .set("Accept", "application/pdf")
-      .buffer(true)
-      .parse(binaryParser);
+    fs.mkdirSync(imageDir, { recursive: true });
+    fs.writeFileSync(imagePath, Buffer.from(TEST_PORTFOLIO_IMAGE_BASE64, "base64"));
 
-    expect(response.status).toBe(200);
-    expect(response.headers["content-type"]).toContain("application/pdf");
-    expect(response.headers["content-disposition"]).toContain("portfolio-detail-en.pdf");
-    expect(Buffer.isBuffer(response.body)).toBe(true);
-    expect(response.body.slice(0, 5).toString("latin1")).toBe("%PDF-");
+    try {
+      const response = await request(app)
+        .get("/exports/portfolios?locale=en")
+        .set("Accept", "application/pdf")
+        .buffer(true)
+        .parse(binaryParser);
 
-    const pdfText = normalizePdfAssertion(extractPdfText(response.body));
-    expect(pdfText).toContain(normalizePdfAssertion("Portfolio Detail Collection"));
-    expect(pdfText).toContain(normalizePdfAssertion("project-alpha"));
-    expect(pdfText).toContain(normalizePdfAssertion("Project Alpha"));
+      expect(response.status).toBe(200);
+      expect(response.headers["content-type"]).toContain("application/pdf");
+      expect(response.headers["content-disposition"]).toContain("portfolio-detail-en.pdf");
+      expect(Buffer.isBuffer(response.body)).toBe(true);
+      expect(response.body.slice(0, 5).toString("latin1")).toBe("%PDF-");
+
+      const pdfText = normalizePdfAssertion(extractPdfText(response.body));
+      expect(pdfText).toContain(normalizePdfAssertion("Portfolio Detail Collection"));
+      expect(pdfText).toContain(normalizePdfAssertion("project-alpha"));
+      expect(pdfText).toContain(normalizePdfAssertion("Project Alpha"));
+      expect(pdfText).toContain(normalizePdfAssertion("Portfolio description english"));
+      expect(pdfText).toContain(normalizePdfAssertion("Membangun API utama"));
+      expect(pdfText).toContain(normalizePdfAssertion("Merapikan arsitektur service"));
+      expect(pdfText).toContain(normalizePdfAssertion("Latency dropped significantly"));
+      expect(pdfText).toContain(normalizePdfAssertion("Improved release confidence"));
+      expect(pdfText).not.toContain(normalizePdfAssertion("Exported at"));
+      expect(response.body.toString("latin1")).toContain("/Subtype /Image");
+    } finally {
+      removeFileIfExists(imagePath);
+    }
   });
 });
