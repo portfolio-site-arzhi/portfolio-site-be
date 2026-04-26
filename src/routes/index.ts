@@ -7,6 +7,7 @@ import { registerEducationRoutes } from "./educationRoute";
 import { registerCertificationRoutes } from "./certificationRoute";
 import { registerSkillRoutes } from "./skillRoute";
 import { registerPortfolioRoutes } from "./portfolioRoute";
+import { registerExportRoutes } from "./exportRoute";
 
 export const registerRoutes = (app: Express) => {
   registerAuthRoutes(app);
@@ -17,4 +18,5 @@ export const registerRoutes = (app: Express) => {
   registerCertificationRoutes(app);
   registerSkillRoutes(app);
   registerPortfolioRoutes(app);
+  registerExportRoutes(app);
 };

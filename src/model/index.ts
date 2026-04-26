@@ -14,6 +14,7 @@ export * from "./skill";
 export * from "./skillInput";
 export * from "./portfolio";
 export * from "./portfolioInput";
+export * from "./export";
 export * from "./locale";
 export * from "./successMessage";
 export type { SiteConfiguration } from "./user";
