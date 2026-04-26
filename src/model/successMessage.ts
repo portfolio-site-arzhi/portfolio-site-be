@@ -28,4 +28,10 @@ export type SkillSuccessMessageKey =
   | "SKILL_DELETED_SUCCESS"
   | "SKILL_SORT_UPDATED_SUCCESS";
 
+export type PortfolioSuccessMessageKey =
+  | "PORTFOLIO_CREATED_SUCCESS"
+  | "PORTFOLIO_UPDATED_SUCCESS"
+  | "PORTFOLIO_DELETED_SUCCESS"
+  | "PORTFOLIO_SORT_UPDATED_SUCCESS";
+
 export type SiteConfigSuccessMessageKey = "SITE_CONFIG_BULK_UPDATED_SUCCESS";

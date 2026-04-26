@@ -12,6 +12,8 @@ export * from "./certification";
 export * from "./certificationInput";
 export * from "./skill";
 export * from "./skillInput";
+export * from "./portfolio";
+export * from "./portfolioInput";
 export * from "./locale";
 export * from "./successMessage";
 export type { SiteConfiguration } from "./user";

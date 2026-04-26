@@ -7,16 +7,16 @@ datasource db {
 }
 
 model User {
-  id             Int            @id @default(autoincrement())
-  email          String         @unique
-  password       String
-  name           String         @default("")
-  status         Boolean        @default(true)
-  google_id      String?        @unique @map("google_id")
-  created_at     DateTime       @default(now()) @map("created_at")
-  updated_at     DateTime       @updatedAt @map("updated_at")
-  created_by     Int            @default(0) @map("created_by")
-  updated_by     Int            @default(0) @map("updated_by")
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  name       String   @default("")
+  status     Boolean  @default(true)
+  google_id  String?  @unique @map("google_id")
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+  created_by Int      @default(0) @map("created_by")
+  updated_by Int      @default(0) @map("updated_by")
 
   @@map("users")
 }
@@ -81,22 +81,22 @@ model Skill {
 }
 
 model Experience {
-  id           Int       @id @default(autoincrement())
-  sort         Int       @map("sort")
-  is_published Boolean   @default(false) @map("is_published")
-  role_id      String    @map("role_id") @db.VarChar(180)
-  role_en      String    @map("role_en") @db.VarChar(180)
-  company_name String    @map("company_name") @db.VarChar(180)
-  company_url  String?   @map("company_url") @db.VarChar(500)
-  start_date   DateTime? @map("start_date") @db.Date
-  end_date     DateTime? @map("end_date") @db.Date
-  is_current   Boolean   @default(false) @map("is_current")
-  description_id String  @map("description_id") @db.Text
-  description_en String  @map("description_en") @db.Text
-  created_at   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updated_at   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-  created_by   Int       @default(0) @map("created_by")
-  updated_by   Int       @default(0) @map("updated_by")
+  id             Int       @id @default(autoincrement())
+  sort           Int       @map("sort")
+  is_published   Boolean   @default(false) @map("is_published")
+  role_id        String    @map("role_id") @db.VarChar(180)
+  role_en        String    @map("role_en") @db.VarChar(180)
+  company_name   String    @map("company_name") @db.VarChar(180)
+  company_url    String?   @map("company_url") @db.VarChar(500)
+  start_date     DateTime? @map("start_date") @db.Date
+  end_date       DateTime? @map("end_date") @db.Date
+  is_current     Boolean   @default(false) @map("is_current")
+  description_id String    @map("description_id") @db.Text
+  description_en String    @map("description_en") @db.Text
+  created_at     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updated_at     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  created_by     Int       @default(0) @map("created_by")
+  updated_by     Int       @default(0) @map("updated_by")
 
   skills ExperienceSkill[]
 
@@ -104,14 +104,14 @@ model Experience {
 }
 
 model ExperienceSkill {
-  id            Int       @id @default(autoincrement())
-  experience_id Int       @map("experience_id")
-  skill_name    String    @map("skill_name") @db.VarChar(100)
-  sort          Int       @map("sort")
-  created_at    DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updated_at    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-  created_by    Int       @default(0) @map("created_by")
-  updated_by    Int       @default(0) @map("updated_by")
+  id            Int      @id @default(autoincrement())
+  experience_id Int      @map("experience_id")
+  skill_name    String   @map("skill_name") @db.VarChar(100)
+  sort          Int      @map("sort")
+  created_at    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updated_at    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  created_by    Int      @default(0) @map("created_by")
+  updated_by    Int      @default(0) @map("updated_by")
 
   experience Experience @relation(fields: [experience_id], references: [id], onDelete: Cascade)
 
@@ -120,23 +120,23 @@ model ExperienceSkill {
 }
 
 model Education {
-  id               Int       @id @default(autoincrement())
-  institution_name String    @map("institution_name") @db.VarChar(255)
-  degree           String    @map("degree") @db.VarChar(255)
-  degree_en        String    @map("degree_en") @db.VarChar(255)
-  field_of_study   String    @map("field_of_study") @db.VarChar(255)
-  field_of_study_en String   @map("field_of_study_en") @db.VarChar(255)
-  start_date       DateTime  @map("start_date") @db.Date
-  end_date         DateTime? @map("end_date") @db.Date
-  description      String?   @map("description") @db.Text
-  description_en   String?   @map("description_en") @db.Text
-  location         String?   @map("location") @db.VarChar(255)
-  sort_order       Int       @default(0) @map("sort_order")
-  is_active        Boolean   @default(true) @map("is_active")
-  created_at       DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updated_at       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-  created_by       Int       @default(0) @map("created_by")
-  updated_by       Int       @default(0) @map("updated_by")
+  id                Int       @id @default(autoincrement())
+  institution_name  String    @map("institution_name") @db.VarChar(255)
+  degree            String    @map("degree") @db.VarChar(255)
+  degree_en         String    @map("degree_en") @db.VarChar(255)
+  field_of_study    String    @map("field_of_study") @db.VarChar(255)
+  field_of_study_en String    @map("field_of_study_en") @db.VarChar(255)
+  start_date        DateTime  @map("start_date") @db.Date
+  end_date          DateTime? @map("end_date") @db.Date
+  description       String?   @map("description") @db.Text
+  description_en    String?   @map("description_en") @db.Text
+  location          String?   @map("location") @db.VarChar(255)
+  sort_order        Int       @default(0) @map("sort_order")
+  is_active         Boolean   @default(true) @map("is_active")
+  created_at        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updated_at        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  created_by        Int       @default(0) @map("created_by")
+  updated_by        Int       @default(0) @map("updated_by")
 
   @@index([is_active, sort_order])
   @@index([created_at])
@@ -161,4 +161,48 @@ model Certification {
   @@index([is_active, sort_order])
   @@index([issue_date])
   @@map("certifications")
+}
+
+model Portfolio {
+  id             Int       @id @default(autoincrement())
+  slug           String    @unique @map("slug") @db.VarChar(160)
+  title          String    @map("title") @db.VarChar(200)
+  description    String    @map("description") @db.Text
+  description_en String?   @map("description_en") @db.Text
+  contribution   String?   @map("contribution") @db.Text
+  contribution_en String?  @map("contribution_en") @db.Text
+  outcome        String?   @map("outcome") @db.Text
+  outcome_en     String?   @map("outcome_en") @db.Text
+  image          String?   @map("image") @db.VarChar(500)
+  role           String?   @map("role") @db.VarChar(160)
+  live_url       String?   @map("live_url") @db.VarChar(500)
+  github_url     String?   @map("github_url") @db.VarChar(500)
+  display_order  Int       @default(0) @map("display_order")
+  is_published   Boolean   @default(false) @map("is_published")
+  published_at   DateTime? @map("published_at") @db.Timestamptz
+  created_at     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updated_at     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  created_by     Int       @default(0) @map("created_by")
+  updated_by     Int       @default(0) @map("updated_by")
+
+  stacks        PortfolioStack[]
+
+  @@index([is_published, display_order])
+  @@map("portfolios")
+}
+
+model PortfolioStack {
+  id            Int      @id @default(autoincrement())
+  portfolio_id  Int      @map("portfolio_id")
+  name          String   @map("name") @db.VarChar(120)
+  display_order Int      @default(0) @map("display_order")
+  created_at    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updated_at    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  created_by    Int      @default(0) @map("created_by")
+  updated_by    Int      @default(0) @map("updated_by")
+
+  portfolio Portfolio @relation(fields: [portfolio_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([portfolio_id, display_order])
+  @@map("portfolio_stacks")
 }
