@@ -16,6 +16,7 @@ export interface HomeConfigValue {
 export interface AboutConfigValue {
   about_me: string;
   email: string;
+  address: string;
 }
 
 export interface FooterConfigValue {
@@ -60,6 +61,7 @@ export interface HomeLandingValue {
 export interface AboutLandingValue {
   about_me: LocalizedTextValue;
   email: string;
+  address: string;
 }
 
 export interface FooterLandingValue {

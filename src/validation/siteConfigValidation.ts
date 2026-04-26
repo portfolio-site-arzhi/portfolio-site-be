@@ -20,6 +20,10 @@ const homeValueSchema = z.object({
 const aboutValueSchema = z.object({
   about_me: localizedTextSchema,
   email: z.string().email("Invalid email format"),
+  address: z.preprocess(
+    (value) => value ?? "",
+    z.string().min(1, "Address is required"),
+  ),
 });
 
 const footerValueSchema = z.object({

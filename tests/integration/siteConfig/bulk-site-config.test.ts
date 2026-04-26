@@ -35,6 +35,7 @@ describe("POST /site-configs/bulk", () => {
               en: "About me...",
             },
             email: "id@example.com",
+            address: "Jakarta, Indonesia",
           },
         },
         footer: {
@@ -66,11 +67,33 @@ describe("POST /site-configs/bulk", () => {
         en: "About me...",
       },
       email: "id@example.com",
+      address: "Jakarta, Indonesia",
     });
     expect(response.body.data.footer).toEqual({
       github: "https://github.com/user-id",
       linkedin: "https://linkedin.com/in/user-id",
       instagram: "https://instagram.com/user-id",
     });
+  });
+
+  it("mengembalikan 400 jika about dikirim tanpa address", async () => {
+    const response = await request(app)
+      .post("/site-configs/bulk")
+      .set("Accept", "application/json")
+      .set("Content-Type", "application/json")
+      .send({
+        about: {
+          value: {
+            about_me: {
+              id: "Tentang saya...",
+              en: "About me...",
+            },
+            email: "id@example.com",
+          },
+        },
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toContain("Address is required");
   });
 });

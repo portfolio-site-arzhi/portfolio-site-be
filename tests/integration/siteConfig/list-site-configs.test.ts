@@ -91,6 +91,7 @@ describe("GET /site-configs", () => {
               en: "About me...",
             },
             email: "id@example.com",
+            address: "Bandung, Indonesia",
           },
         },
       });
@@ -110,6 +111,7 @@ describe("GET /site-configs", () => {
         en: "About me...",
       },
       email: "id@example.com",
+      address: "Bandung, Indonesia",
     });
   });
 });

@@ -254,6 +254,7 @@ export class PrismaSiteConfigRepository implements ISiteConfigRepository {
               en: aboutEnValue?.about_me ?? null,
             },
             email: aboutBaseValue?.email ?? "",
+            address: aboutBaseValue?.address ?? "",
           }
         : null;
 

@@ -50,6 +50,7 @@ const main = async () => {
       locale: null,
       values: {
         email: "ardiansyah@example.com",
+        address: "Jakarta, Indonesia",
       },
     },
     {

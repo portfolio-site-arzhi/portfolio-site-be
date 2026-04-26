@@ -205,6 +205,7 @@ export class SiteConfigService {
         locale: undefined,
         value: {
           email: aboutValue.email,
+          address: aboutValue.address,
         },
         createdBy: 0,
         updatedBy: 0,
