@@ -241,6 +241,14 @@ export class AuthController {
             status: 400,
             messages: ["Data pengguna Google tidak lengkap"],
           },
+          USER_NOT_FOUND: {
+            status: 403,
+            messages: ["Akun Google belum terdaftar"],
+          },
+          USER_INACTIVE: {
+            status: 403,
+            messages: ["Akun tidak aktif"],
+          },
         })
       ) {
         return;

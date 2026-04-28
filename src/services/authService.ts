@@ -57,17 +57,7 @@ export class AuthService {
       return { user: activeUser, tokens };
     }
 
-    const created = await this.userRepository.createUser({
-      email: profile.email,
-      password: await hashSystemPassword(),
-      name: profile.name,
-      status: true,
-      googleId: profile.id,
-      createdBy: 0,
-      updatedBy: 0,
-    });
-    const tokens = await this.generateTokens(created);
-    return { user: created, tokens };
+    throw new Error("USER_NOT_FOUND");
   }
 
   async getUserFromAccessToken(token: string): Promise<User> {
