@@ -1,0 +1,26 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Deploy via SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+        run: |
+          printf '%s\n' "$SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+          trap 'rm -f /tmp/deploy_key' EXIT
+          ssh -p "$SSH_PORT" -i /tmp/deploy_key -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "cd '$APP_DIR' && git pull origin master && docker compose down && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build"

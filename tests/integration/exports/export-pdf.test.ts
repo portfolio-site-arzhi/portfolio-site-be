@@ -42,8 +42,20 @@ const removeFileIfExists = (filePath: string): void => {
 };
 
 describe("GET /exports/*.pdf", () => {
+  const originalLandingPageUrl = process.env.LANDING_PAGE_URL;
+
   beforeEach(async () => {
+    process.env.LANDING_PAGE_URL = "https://portfolio.example.com";
     await resetDatabase();
+  });
+
+  afterEach(() => {
+    if (typeof originalLandingPageUrl === "string") {
+      process.env.LANDING_PAGE_URL = originalLandingPageUrl;
+      return;
+    }
+
+    delete process.env.LANDING_PAGE_URL;
   });
 
   afterAll(async () => {
@@ -169,6 +181,7 @@ describe("GET /exports/*.pdf", () => {
     expect(pdfText).toContain(normalizePdfAssertion("Backend Engineer"));
     expect(pdfText).toContain(normalizePdfAssertion("Ringkasan profil backend engineer"));
     expect(pdfText).toContain(normalizePdfAssertion("About me backend engineer"));
+    expect(pdfText).toContain(normalizePdfAssertion("https://portfolio.example.com"));
     expect(pdfText).toContain(normalizePdfAssertion("https://linkedin.com/in/johndoe"));
     expect(pdfText).toContain(normalizePdfAssertion("https://github.com/johndoe"));
     expect(pdfText).toContain(normalizePdfAssertion("Built internal APIs"));

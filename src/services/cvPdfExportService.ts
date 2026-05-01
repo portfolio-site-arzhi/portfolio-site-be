@@ -7,6 +7,7 @@ import type {
   SkillLandingGroupItem,
 } from "../model";
 import { htmlToPlainText } from "../helper/htmlToPlainText";
+import { getLandingPageUrl } from "../helper/landingPageUrl";
 import { pickLocalizedValue } from "../helper/localizedText";
 import {
   createPdfBuffer,
@@ -139,12 +140,14 @@ export class CvPdfExportService {
         keywords: ["cv", "ats", "resume", locale],
       },
       (doc) => {
+        const landingPageUrl = getLandingPageUrl();
         const primaryContact = joinNonEmpty([
           siteConfig.home?.position ?? null,
           siteConfig.about?.email ?? null,
           siteConfig.about?.address ?? null,
         ]);
         const socialLinks = joinNonEmpty([
+          landingPageUrl ? `Website: ${landingPageUrl}` : null,
           siteConfig.footer?.linkedin ? `LinkedIn: ${siteConfig.footer.linkedin}` : null,
           siteConfig.footer?.github ? `GitHub: ${siteConfig.footer.github}` : null,
         ]);
