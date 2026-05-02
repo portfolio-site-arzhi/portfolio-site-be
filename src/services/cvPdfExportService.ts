@@ -190,11 +190,6 @@ export class CvPdfExportService {
           writePdfBulletList(doc, buildSkillLines(skills));
         }
 
-        if (portfolios.length > 0) {
-          writePdfSectionTitle(doc, "Portfolio");
-          writePdfBulletList(doc, buildPortfolioLines(portfolios));
-        }
-
         if (experiences.length > 0) {
           writePdfSectionTitle(doc, "Professional Experience");
           for (const experience of experiences) {
@@ -244,6 +239,11 @@ export class CvPdfExportService {
             }
             doc.moveDown(0.2);
           }
+        }
+
+        if (portfolios.length > 0) {
+          writePdfSectionTitle(doc, "Portfolio");
+          writePdfBulletList(doc, buildPortfolioLines(portfolios));
         }
       },
     );

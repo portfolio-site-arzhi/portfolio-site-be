@@ -33,6 +33,18 @@ const extractPdfText = (buffer: Buffer): string =>
 const normalizePdfAssertion = (value: string): string =>
   value.replace(/[^a-zA-Z0-9@.:/-]+/g, "").toLowerCase();
 
+const expectTextOrder = (text: string, values: string[]): void => {
+  let previousIndex = -1;
+
+  for (const value of values) {
+    const normalizedValue = normalizePdfAssertion(value);
+    const currentIndex = text.indexOf(normalizedValue);
+
+    expect(currentIndex).toBeGreaterThan(previousIndex);
+    previousIndex = currentIndex;
+  }
+};
+
 const TEST_PORTFOLIO_IMAGE_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAANSURBVBhXY/jPwPAfAAUAAf+mXJtdAAAAAElFTkSuQmCC";
 
@@ -243,6 +255,13 @@ describe("GET /exports/*.pdf", () => {
     expect(pdfText).toContain(normalizePdfAssertion("Built internal APIs"));
     expect(pdfText).toContain(normalizePdfAssertion("Improved query performance"));
     expect(pdfText).not.toContain(normalizePdfAssertion("Exported at"));
+    expectTextOrder(pdfText, [
+      "Core Skills",
+      "Built internal APIs",
+      "Bachelor of Computer Science",
+      "AWS Associate",
+      "https://demo.example.com/project-live",
+    ]);
   });
 
   it("mengembalikan PDF detail portfolio", async () => {

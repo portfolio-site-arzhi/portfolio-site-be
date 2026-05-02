@@ -34,6 +34,7 @@ Catatan:
 - Foto profile tidak dimasukkan ke CV PDF agar format tetap sederhana dan ATS-friendly.
 - Isi data akan memprioritaskan bahasa Inggris, lalu fallback ke Indonesia jika versi Inggris kosong.
 - CV juga memuat section `Portfolio` dari data portfolio yang published.
+- Section `Portfolio` ditempatkan di bagian paling bawah CV, setelah `Certifications`.
 - Isi bullet `Portfolio` memakai fallback berurutan: `live_url` -> `github_url` -> `title`.
 
 Contoh cURL:
