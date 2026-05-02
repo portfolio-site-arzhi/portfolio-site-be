@@ -14,6 +14,7 @@ Catatan penting:
 - Field `slug` tidak dikirim dari frontend. Backend membuat slug otomatis dari `title`, misalnya `Ecommerce Dashboard` menjadi `ecommerce-dashboard`.
 - Jika hasil slug dari `title` sudah dipakai portfolio lain, backend menambahkan suffix angka seperti `ecommerce-dashboard-2`.
 - Upload gambar mengikuti aturan upload project: JPG/JPEG, PNG, atau WebP.
+- Ukuran file `image` maksimal `5MB` per file.
 - Untuk update yang berhubungan dengan gambar, `payload.status_file` wajib dikirim.
 - `status_file = 0`: gambar tidak berubah.
 - `status_file = 1` + ada file `image`: gambar lama diganti gambar baru.

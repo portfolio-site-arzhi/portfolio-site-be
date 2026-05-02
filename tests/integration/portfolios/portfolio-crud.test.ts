@@ -3,14 +3,19 @@ import { app } from "../../../src";
 import { resetDatabase } from "../../utils/db";
 
 const imageBuffer = Buffer.from("portfolio-image");
+const oversizedImageBuffer = Buffer.alloc(5 * 1024 * 1024 + 1, 1);
 
-const postPortfolio = (payload: Record<string, unknown>) =>
+const postPortfolio = (
+  payload: Record<string, unknown>,
+  fileBuffer: Buffer = imageBuffer,
+  filename = "portfolio.png",
+) =>
   request(app)
     .post("/portfolios")
     .set("Accept", "application/json")
     .field("payload", JSON.stringify(payload))
-    .attach("image", imageBuffer, {
-      filename: "portfolio.png",
+    .attach("image", fileBuffer, {
+      filename,
       contentType: "image/png",
     });
 
@@ -92,6 +97,25 @@ describe("CRUD /portfolios", () => {
         image: null,
       }),
     );
+  });
+
+  it("mengembalikan 400 jika image melebihi batas ukuran upload", async () => {
+    const response = await postPortfolio(
+      {
+        title: "Oversized Portfolio",
+        description: "Desc",
+        stacks: [],
+      },
+      oversizedImageBuffer,
+      "portfolio-oversized.png",
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toContain("Ukuran file gambar maksimal 5MB");
+
+    const list = await request(app).get("/portfolios").set("Accept", "application/json");
+    expect(list.status).toBe(200);
+    expect(list.body.data).toEqual([]);
   });
 
   it("mengabaikan slug dari payload frontend dan memakai title", async () => {

@@ -3,6 +3,7 @@ import type {
   EducationLandingItem,
   ExperienceLandingItem,
   PdfExportResult,
+  PortfolioLandingListItem,
   ResponseLocale,
   SkillLandingGroupItem,
 } from "../model";
@@ -20,6 +21,7 @@ import {
 import { CertificationLandingService } from "./certificationLandingService";
 import { EducationLandingService } from "./educationLandingService";
 import { ExperienceLandingService } from "./experienceLandingService";
+import { PortfolioLandingService } from "./portfolioLandingService";
 import { SiteConfigLandingService } from "./siteConfigLandingService";
 import { SkillLandingService } from "./skillLandingService";
 
@@ -107,6 +109,17 @@ const buildSkillLines = (skillGroups: SkillLandingGroupItem[]): string[] =>
     })
     .filter(Boolean);
 
+const buildPortfolioLines = (
+  portfolios: PortfolioLandingListItem[],
+): string[] =>
+  portfolios
+    .map((portfolio) =>
+      [portfolio.live_url, portfolio.github_url, portfolio.title]
+        .map((value) => value?.trim())
+        .find((value): value is string => Boolean(value)),
+    )
+    .filter((value): value is string => Boolean(value));
+
 export class CvPdfExportService {
   constructor(
     private readonly siteConfigLandingService: SiteConfigLandingService,
@@ -114,16 +127,18 @@ export class CvPdfExportService {
     private readonly educationLandingService: EducationLandingService,
     private readonly certificationLandingService: CertificationLandingService,
     private readonly skillLandingService: SkillLandingService,
+    private readonly portfolioLandingService: PortfolioLandingService,
   ) {}
 
   async exportPdf(locale: ResponseLocale): Promise<PdfExportResult> {
-    const [siteConfig, experiences, educations, certifications, skills] =
+    const [siteConfig, experiences, educations, certifications, skills, portfolios] =
       await Promise.all([
         this.siteConfigLandingService.getLandingPageData(),
         this.experienceLandingService.listPublished(),
         this.educationLandingService.listActive(),
         this.certificationLandingService.listActive(),
         this.skillLandingService.listActive(),
+        this.portfolioLandingService.listPublished(),
       ]);
 
     const filename = `cv-ats-${locale}.pdf`;
@@ -173,6 +188,11 @@ export class CvPdfExportService {
         if (skills.length > 0) {
           writePdfSectionTitle(doc, "Core Skills");
           writePdfBulletList(doc, buildSkillLines(skills));
+        }
+
+        if (portfolios.length > 0) {
+          writePdfSectionTitle(doc, "Portfolio");
+          writePdfBulletList(doc, buildPortfolioLines(portfolios));
         }
 
         if (experiences.length > 0) {

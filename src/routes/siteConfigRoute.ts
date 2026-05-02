@@ -4,7 +4,10 @@ import { SiteConfigService } from "../services/siteConfigService";
 import { SiteConfigLandingService } from "../services/siteConfigLandingService";
 import { SiteConfigController } from "../controllers/siteConfigController";
 import { getPrisma } from "../config";
-import { createProfileUploadMiddleware } from "../config/upload";
+import {
+  createProfileUploadMiddleware,
+  withHandledUploadErrors,
+} from "../config/upload";
 
 export const registerSiteConfigRoutes = (app: Express) => {
   const prisma = getPrisma();
@@ -23,7 +26,9 @@ export const registerSiteConfigRoutes = (app: Express) => {
   app.get("/site-configs", controller.list);
   app.post(
     "/site-configs/bulk",
-    upload.fields([{ name: "home_photo", maxCount: 1 }]),
+    withHandledUploadErrors(
+      upload.fields([{ name: "home_photo", maxCount: 1 }]),
+    ),
     controller.bulkUpdate,
   );
 };

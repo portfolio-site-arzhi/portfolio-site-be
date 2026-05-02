@@ -163,6 +163,55 @@ describe("GET /exports/*.pdf", () => {
       },
     });
 
+    await prisma.portfolio.createMany({
+      data: [
+        {
+          slug: "project-live",
+          title: "Project Live",
+          description: "Portfolio dengan live url",
+          live_url: "https://demo.example.com/project-live",
+          github_url: "https://github.com/example/project-live",
+          display_order: 1,
+          is_published: true,
+          published_at: new Date("2026-01-01T00:00:00.000Z"),
+          created_by: 0,
+          updated_by: 0,
+        },
+        {
+          slug: "project-github",
+          title: "Project GitHub",
+          description: "Portfolio dengan github url",
+          github_url: "https://github.com/example/project-github",
+          display_order: 2,
+          is_published: true,
+          published_at: new Date("2026-01-02T00:00:00.000Z"),
+          created_by: 0,
+          updated_by: 0,
+        },
+        {
+          slug: "project-title-only",
+          title: "Project Title Only",
+          description: "Portfolio tanpa link",
+          display_order: 3,
+          is_published: true,
+          published_at: new Date("2026-01-03T00:00:00.000Z"),
+          created_by: 0,
+          updated_by: 0,
+        },
+        {
+          slug: "project-draft",
+          title: "Project Draft",
+          description: "Portfolio draft",
+          live_url: "https://demo.example.com/project-draft",
+          display_order: 4,
+          is_published: false,
+          published_at: new Date("2026-01-04T00:00:00.000Z"),
+          created_by: 0,
+          updated_by: 0,
+        },
+      ],
+    });
+
     const response = await request(app)
       .get("/exports/cv")
       .set("Accept", "application/pdf")
@@ -184,6 +233,10 @@ describe("GET /exports/*.pdf", () => {
     expect(pdfText).toContain(normalizePdfAssertion("https://portfolio.example.com"));
     expect(pdfText).toContain(normalizePdfAssertion("https://linkedin.com/in/johndoe"));
     expect(pdfText).toContain(normalizePdfAssertion("https://github.com/johndoe"));
+    expect(pdfText).toContain(normalizePdfAssertion("https://demo.example.com/project-live"));
+    expect(pdfText).toContain(normalizePdfAssertion("https://github.com/example/project-github"));
+    expect(pdfText).toContain(normalizePdfAssertion("Project Title Only"));
+    expect(pdfText).not.toContain(normalizePdfAssertion("https://demo.example.com/project-draft"));
     expect(pdfText).toContain(normalizePdfAssertion("Built internal APIs"));
     expect(pdfText).toContain(normalizePdfAssertion("Improved query performance"));
     expect(pdfText).not.toContain(normalizePdfAssertion("Exported at"));

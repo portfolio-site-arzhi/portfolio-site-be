@@ -111,6 +111,7 @@ Catatan:
 - Contoh di bawah hanya menggambarkan struktur JSON logical.
 - Field `photo` berisi string URL/path yang tersimpan di database, bukan file binary.
 - Saat menggunakan multipart dengan upload file, nilai `photo` biasanya tidak dikirim di payload; nilai tersebut akan diisi atau dihapus otomatis berdasarkan kombinasi `status_file` dan file yang diupload.
+- Ukuran file `home_photo` maksimal `5MB` per file.
 - Saat data dikembalikan ke client (baik melalui `GET /site-configs` maupun setelah `POST /site-configs/bulk`), jika field `photo` berisi path relatif (misalnya `/uploads/profile/profile-123.png`), backend akan mengonversinya menjadi URL penuh menggunakan env `BASEURL`.
 
 ```json

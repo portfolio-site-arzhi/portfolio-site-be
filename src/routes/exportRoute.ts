@@ -12,6 +12,7 @@ import { PortfolioPdfExportService } from "../services/portfolioPdfExportService
 import { CertificationLandingService } from "../services/certificationLandingService";
 import { EducationLandingService } from "../services/educationLandingService";
 import { ExperienceLandingService } from "../services/experienceLandingService";
+import { PortfolioLandingService } from "../services/portfolioLandingService";
 import { PortfolioService } from "../services/portfolioService";
 import { SiteConfigLandingService } from "../services/siteConfigLandingService";
 import { SkillLandingService } from "../services/skillLandingService";
@@ -30,6 +31,7 @@ export const registerExportRoutes = (app: Express) => {
     new EducationLandingService(educationRepository),
     new CertificationLandingService(certificationRepository),
     new SkillLandingService(skillRepository),
+    new PortfolioLandingService(portfolioRepository),
   );
   const portfolioPdfExportService = new PortfolioPdfExportService(
     new PortfolioService(portfolioRepository),
