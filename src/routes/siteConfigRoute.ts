@@ -8,6 +8,7 @@ import {
   createProfileUploadMiddleware,
   withHandledUploadErrors,
 } from "../config/upload";
+import { createRequireAuthMiddleware } from "../middleware/authMiddleware";
 
 export const registerSiteConfigRoutes = (app: Express) => {
   const prisma = getPrisma();
@@ -22,10 +23,12 @@ export const registerSiteConfigRoutes = (app: Express) => {
   );
 
   const upload = createProfileUploadMiddleware();
+  const requireAuth = createRequireAuthMiddleware();
 
   app.get("/site-configs", controller.list);
   app.post(
     "/site-configs/bulk",
+    requireAuth,
     withHandledUploadErrors(
       upload.fields([{ name: "home_photo", maxCount: 1 }]),
     ),

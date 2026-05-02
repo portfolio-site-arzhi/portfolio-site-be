@@ -1,5 +1,6 @@
 import request from "supertest";
 import { app } from "../../../src";
+import { createAccessTokenCookie } from "../../utils/auth";
 import { resetDatabase } from "../../utils/db";
 
 describe("PATCH /skills/sort dan GET /landing/skills", () => {
@@ -8,9 +9,11 @@ describe("PATCH /skills/sort dan GET /landing/skills", () => {
   });
 
   it("update sort mengikuti urutan ids array (vuedraggable)", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const a = await request(app)
       .post("/skills")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "A",
         is_active: true,
@@ -20,6 +23,7 @@ describe("PATCH /skills/sort dan GET /landing/skills", () => {
     const b = await request(app)
       .post("/skills")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "B",
         is_active: true,
@@ -29,6 +33,7 @@ describe("PATCH /skills/sort dan GET /landing/skills", () => {
     const c = await request(app)
       .post("/skills")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "C",
         is_active: true,
@@ -39,21 +44,27 @@ describe("PATCH /skills/sort dan GET /landing/skills", () => {
     const updated = await request(app)
       .patch("/skills/sort")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({ ids });
 
     expect(updated.status).toBe(200);
     expect(updated.body.message).toBe("Urutan skill berhasil diperbarui");
     expect(updated.body.data).toBe(true);
 
-    const list = await request(app).get("/skills").set("Accept", "application/json");
+    const list = await request(app)
+      .get("/skills")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(list.body.data.map((x: { id: number }) => x.id)).toEqual(ids);
   });
 
   it("landing hanya mengembalikan parent aktif", async () => {
+    const { cookie } = await createAccessTokenCookie();
     await request(app)
       .post("/skills")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "Public Group",
         is_active: true,
@@ -63,6 +74,7 @@ describe("PATCH /skills/sort dan GET /landing/skills", () => {
     await request(app)
       .post("/skills")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "Hidden Group",
         is_active: false,

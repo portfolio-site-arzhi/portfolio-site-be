@@ -1,16 +1,87 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { resetDatabase } from "../../utils/db";
+import { createAccessTokenCookie } from "../../utils/auth";
 
 describe("CRUD /certifications", () => {
   beforeEach(async () => {
     await resetDatabase();
   });
 
+  it("semua endpoint CMS certification mengembalikan 401 jika belum login", async () => {
+    const { cookie } = await createAccessTokenCookie();
+    const created = await request(app)
+      .post("/certifications")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie])
+      .send({
+        name: "Protected",
+        name_en: "Protected",
+        issuing_organization: "Issuer",
+        issue_date: "2024-01-01",
+        description: null,
+        description_en: null,
+        is_active: true,
+      });
+
+    expect(created.status).toBe(201);
+
+    const list = await request(app)
+      .get("/certifications")
+      .set("Accept", "application/json");
+    expect(list.status).toBe(401);
+    expect(list.body.errors).toContain("Token akses tidak ditemukan");
+
+    const detail = await request(app)
+      .get(`/certifications/${created.body.data.id}`)
+      .set("Accept", "application/json");
+    expect(detail.status).toBe(401);
+    expect(detail.body.errors).toContain("Token akses tidak ditemukan");
+
+    const create = await request(app)
+      .post("/certifications")
+      .set("Accept", "application/json")
+      .send({
+        name: "Sertifikasi ID",
+        name_en: "Certification EN",
+        issuing_organization: "Issuer Inc",
+        issue_date: "2024-01-01",
+        description: null,
+        description_en: null,
+        is_active: true,
+      });
+    expect(create.status).toBe(401);
+    expect(create.body.errors).toContain("Token akses tidak ditemukan");
+
+    const update = await request(app)
+      .put(`/certifications/${created.body.data.id}`)
+      .set("Accept", "application/json")
+      .send({
+        name: "Updated",
+      });
+    expect(update.status).toBe(401);
+    expect(update.body.errors).toContain("Token akses tidak ditemukan");
+
+    const remove = await request(app)
+      .delete(`/certifications/${created.body.data.id}`)
+      .set("Accept", "application/json");
+    expect(remove.status).toBe(401);
+    expect(remove.body.errors).toContain("Token akses tidak ditemukan");
+
+    const sort = await request(app)
+      .patch("/certifications/sort")
+      .set("Accept", "application/json")
+      .send({ ids: [created.body.data.id] });
+    expect(sort.status).toBe(401);
+    expect(sort.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
   it("membuat certification baru dan mengembalikan 201", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .post("/certifications")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "Sertifikasi ID",
         name_en: "Certification EN",
@@ -41,9 +112,11 @@ describe("CRUD /certifications", () => {
   });
 
   it("list mengembalikan data dengan order stabil sort_order asc, id desc", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const first = await request(app)
       .post("/certifications")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "A",
         name_en: "A",
@@ -57,6 +130,7 @@ describe("CRUD /certifications", () => {
     const second = await request(app)
       .post("/certifications")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "B",
         name_en: "B",
@@ -72,7 +146,8 @@ describe("CRUD /certifications", () => {
 
     const list = await request(app)
       .get("/certifications")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(Array.isArray(list.body.data)).toBe(true);
     expect(list.body.data.length).toBe(2);
@@ -81,18 +156,22 @@ describe("CRUD /certifications", () => {
   });
 
   it("detail mengembalikan 404 jika id tidak ditemukan", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .get("/certifications/999999")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(response.status).toBe(404);
     expect(response.body.errors).toContain("Certification tidak ditemukan");
   });
 
   it("update dapat mengubah field dan sanitasi description", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const created = await request(app)
       .post("/certifications")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "Old",
         name_en: "Old",
@@ -106,6 +185,7 @@ describe("CRUD /certifications", () => {
     const updated = await request(app)
       .put(`/certifications/${created.body.data.id}`)
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "Updated",
         description: "<p>New</p><script>alert(1)</script>",
@@ -121,9 +201,11 @@ describe("CRUD /certifications", () => {
   });
 
   it("delete mengembalikan 200 dan list kosong", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const created = await request(app)
       .post("/certifications")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "To Delete",
         name_en: "To Delete",
@@ -136,7 +218,8 @@ describe("CRUD /certifications", () => {
 
     const deleted = await request(app)
       .delete(`/certifications/${created.body.data.id}`)
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(deleted.status).toBe(200);
     expect(deleted.body.message).toBe("Certification berhasil dihapus");
@@ -144,7 +227,8 @@ describe("CRUD /certifications", () => {
 
     const list = await request(app)
       .get("/certifications")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(list.body.data.length).toBe(0);
   });

@@ -3,7 +3,7 @@ User API
 
 Endpoint ini digunakan untuk mengelola data pengguna di backend.
 
-Semua contoh cURL di bawah tidak menggunakan header Cookie. Autentikasi dan otorisasi bisa ditambahkan kemudian sesuai kebutuhan.
+Semua endpoint `/users` membutuhkan login.
 
 Untuk endpoint non-GET (`POST`, `PUT`, `PATCH`, `DELETE`) yang mengembalikan field `message`, backend mendukung header `Accept-Language` (`id` atau `en`).
 
@@ -13,6 +13,7 @@ Daftar pengguna
 ---------------
 
 - Endpoint: `GET http://localhost:9000/users`
+- Auth: Required (login)
 - Query string:
   - `page` (opsional, default `1`)
   - `page_size` (opsional, default `10`, min `1`, max `100`)
@@ -55,6 +56,7 @@ Detail pengguna
 ---------------
 
 - Endpoint: `GET http://localhost:9000/users/:id`
+- Auth: Required (login)
 
 Contoh cURL:
 
@@ -92,6 +94,7 @@ Buat pengguna baru
 ------------------
 
 - Endpoint: `POST http://localhost:9000/users`
+- Auth: Required (login)
 
 Body JSON:
 
@@ -161,6 +164,7 @@ Update pengguna
 ---------------
 
 - Endpoint: `PUT http://localhost:9000/users/:id`
+- Auth: Required (login)
 
 Body JSON:
 
@@ -204,6 +208,7 @@ Update status pengguna
 Endpoint ini dibuat terpisah khusus untuk mengubah status aktif/nonaktif pengguna.
 
 - Endpoint: `PATCH http://localhost:9000/users/:id/status`
+- Auth: Required (login)
 
 Body JSON:
 
@@ -257,6 +262,7 @@ Hapus pengguna
 Endpoint ini digunakan untuk menghapus pengguna berdasarkan id.
 
 - Endpoint: `DELETE http://localhost:9000/users/:id`
+- Auth: Required (login)
 
 Contoh cURL:
 

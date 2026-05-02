@@ -5,6 +5,7 @@ import {
   createPortfolioUploadMiddleware,
   withHandledUploadErrors,
 } from "../config/upload";
+import { createRequireAuthMiddleware } from "../middleware/authMiddleware";
 import { PrismaPortfolioRepository } from "../repository/portfolioRepository";
 import { PortfolioLandingService } from "../services/portfolioLandingService";
 import { PortfolioService } from "../services/portfolioService";
@@ -17,7 +18,9 @@ export const registerPortfolioRoutes = (app: Express) => {
   const controller = new PortfolioController(portfolioService);
   const landingController = new PortfolioLandingController(portfolioLandingService);
   const upload = createPortfolioUploadMiddleware();
+  const requireAuth = createRequireAuthMiddleware();
 
+  app.use("/portfolios", requireAuth);
   app.get("/portfolios", controller.list);
   app.get("/portfolios/:id", controller.detail);
   app.post(

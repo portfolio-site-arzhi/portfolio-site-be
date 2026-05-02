@@ -4,6 +4,7 @@ import request from "supertest";
 import { app } from "../../../src";
 import { getPrisma } from "../../../src/config";
 import { resetDatabase } from "../../utils/db";
+import { createAccessTokenCookie } from "../../utils/auth";
 
 const binaryParser = (
   res: NodeJS.ReadableStream,
@@ -64,6 +65,7 @@ describe("GET /exports/*.pdf", () => {
   });
 
   it("mengembalikan PDF CV ATS", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const prisma = getPrisma();
 
     await prisma.siteConfiguration.createMany({
@@ -215,6 +217,7 @@ describe("GET /exports/*.pdf", () => {
     const response = await request(app)
       .get("/exports/cv")
       .set("Accept", "application/pdf")
+      .set("Cookie", [cookie])
       .buffer(true)
       .parse(binaryParser);
 
@@ -243,6 +246,7 @@ describe("GET /exports/*.pdf", () => {
   });
 
   it("mengembalikan PDF detail portfolio", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const prisma = getPrisma();
     const imageDir = path.join(process.cwd(), "uploads", "portfolio");
     const imagePath = path.join(imageDir, "project-alpha.png");
@@ -286,6 +290,7 @@ describe("GET /exports/*.pdf", () => {
       const response = await request(app)
         .get("/exports/portfolios?locale=en")
         .set("Accept", "application/pdf")
+        .set("Cookie", [cookie])
         .buffer(true)
         .parse(binaryParser);
 
@@ -309,5 +314,21 @@ describe("GET /exports/*.pdf", () => {
     } finally {
       removeFileIfExists(imagePath);
     }
+  });
+
+  it("endpoint export mengembalikan 401 jika belum login", async () => {
+    const cvResponse = await request(app)
+      .get("/exports/cv")
+      .set("Accept", "application/pdf");
+
+    expect(cvResponse.status).toBe(401);
+    expect(cvResponse.body.errors).toContain("Token akses tidak ditemukan");
+
+    const portfolioResponse = await request(app)
+      .get("/exports/portfolios?locale=en")
+      .set("Accept", "application/pdf");
+
+    expect(portfolioResponse.status).toBe(401);
+    expect(portfolioResponse.body.errors).toContain("Token akses tidak ditemukan");
   });
 });

@@ -99,7 +99,7 @@ Endpoint ini bersifat upsert untuk setiap kombinasi `type` dan `locale` di dalam
 - Jika sudah ada, semua key lama untuk kombinasi itu akan dihapus dan digantikan oleh payload `value` yang baru.
 
 - Endpoint: `POST http://localhost:9000/site-configs/bulk`
-- Auth: Required (admin)
+- Auth: Required (login)
 - Content-Type: `multipart/form-data`
 
 Contoh body bulk (sekali request untuk semua konfigurasi):

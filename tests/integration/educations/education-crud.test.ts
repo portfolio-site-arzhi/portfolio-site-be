@@ -1,16 +1,95 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { resetDatabase } from "../../utils/db";
+import { createAccessTokenCookie } from "../../utils/auth";
 
 describe("CRUD /educations", () => {
   beforeEach(async () => {
     await resetDatabase();
   });
 
+  it("semua endpoint CMS education mengembalikan 401 jika belum login", async () => {
+    const { cookie } = await createAccessTokenCookie();
+    const created = await request(app)
+      .post("/educations")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie])
+      .send({
+        institution_name: "Protected",
+        degree: "D",
+        degree_en: "D",
+        field_of_study: "F",
+        field_of_study_en: "F",
+        start_date: "2018-01-01",
+        end_date: null,
+        description: null,
+        description_en: null,
+        location: null,
+        is_active: true,
+      });
+
+    expect(created.status).toBe(201);
+
+    const list = await request(app)
+      .get("/educations")
+      .set("Accept", "application/json");
+    expect(list.status).toBe(401);
+    expect(list.body.errors).toContain("Token akses tidak ditemukan");
+
+    const detail = await request(app)
+      .get(`/educations/${created.body.data.id}`)
+      .set("Accept", "application/json");
+    expect(detail.status).toBe(401);
+    expect(detail.body.errors).toContain("Token akses tidak ditemukan");
+
+    const create = await request(app)
+      .post("/educations")
+      .set("Accept", "application/json")
+      .send({
+        institution_name: "Institut Teknologi",
+        degree: "Sarjana",
+        degree_en: "Bachelor",
+        field_of_study: "Informatika",
+        field_of_study_en: "Computer Science",
+        start_date: "2018-08-01",
+        end_date: "2022-07-01",
+        description: null,
+        description_en: null,
+        location: "Bandung, Indonesia",
+        is_active: true,
+      });
+    expect(create.status).toBe(401);
+    expect(create.body.errors).toContain("Token akses tidak ditemukan");
+
+    const update = await request(app)
+      .put(`/educations/${created.body.data.id}`)
+      .set("Accept", "application/json")
+      .send({
+        institution_name: "Updated",
+      });
+    expect(update.status).toBe(401);
+    expect(update.body.errors).toContain("Token akses tidak ditemukan");
+
+    const remove = await request(app)
+      .delete(`/educations/${created.body.data.id}`)
+      .set("Accept", "application/json");
+    expect(remove.status).toBe(401);
+    expect(remove.body.errors).toContain("Token akses tidak ditemukan");
+
+    const sort = await request(app)
+      .patch("/educations/sort")
+      .set("Accept", "application/json")
+      .send({ ids: [created.body.data.id] });
+    expect(sort.status).toBe(401);
+    expect(sort.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
   it("membuat education baru dan mengembalikan 201", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Institut Teknologi",
         degree: "Sarjana",
@@ -45,9 +124,11 @@ describe("CRUD /educations", () => {
   });
 
   it("list mengembalikan data dengan order stabil sort_order asc, id desc", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const first = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Inst 1",
         degree: "D1",
@@ -65,6 +146,7 @@ describe("CRUD /educations", () => {
     const second = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Inst 2",
         degree: "D2",
@@ -82,7 +164,10 @@ describe("CRUD /educations", () => {
     expect(first.status).toBe(201);
     expect(second.status).toBe(201);
 
-    const list = await request(app).get("/educations").set("Accept", "application/json");
+    const list = await request(app)
+      .get("/educations")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(Array.isArray(list.body.data)).toBe(true);
     expect(list.body.data.length).toBe(2);
@@ -91,18 +176,22 @@ describe("CRUD /educations", () => {
   });
 
   it("detail mengembalikan 404 jika id tidak ditemukan", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .get("/educations/999999")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(response.status).toBe(404);
     expect(response.body.errors).toContain("Education tidak ditemukan");
   });
 
   it("update dapat mengubah field dan sanitasi description", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const created = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Inst",
         degree: "D",
@@ -120,6 +209,7 @@ describe("CRUD /educations", () => {
     const updated = await request(app)
       .put(`/educations/${created.body.data.id}`)
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Updated Inst",
         description: "<p>New</p><script>alert(1)</script>",
@@ -135,9 +225,11 @@ describe("CRUD /educations", () => {
   });
 
   it("delete mengembalikan 200 dan list kosong", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const created = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Inst",
         degree: "D",
@@ -154,13 +246,17 @@ describe("CRUD /educations", () => {
 
     const deleted = await request(app)
       .delete(`/educations/${created.body.data.id}`)
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(deleted.status).toBe(200);
     expect(deleted.body.message).toBe("Education berhasil dihapus");
     expect(deleted.body.data).toBe(true);
 
-    const list = await request(app).get("/educations").set("Accept", "application/json");
+    const list = await request(app)
+      .get("/educations")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(list.body.data.length).toBe(0);
   });

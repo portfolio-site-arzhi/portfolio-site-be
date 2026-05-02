@@ -1,6 +1,7 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { getPrisma } from "../../../src/config";
+import { createAccessTokenCookie } from "../../utils/auth";
 import { resetDatabase } from "../../utils/db";
 
 describe("PATCH /users/:id/status", () => {
@@ -13,12 +14,26 @@ describe("PATCH /users/:id/status", () => {
     await prisma.$disconnect();
   });
 
+  it("mengembalikan 401 jika belum login", async () => {
+    const response = await request(app)
+      .patch("/users/1/status")
+      .set("Accept", "application/json")
+      .send({
+        status: false,
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
   it("mengupdate status user menjadi false dan mengembalikan 200", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const prisma = getPrisma();
 
     const createResponse = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email: `update-status-${Date.now()}@example.com`,
         name: "User Update Status",
@@ -30,6 +45,7 @@ describe("PATCH /users/:id/status", () => {
     const updateStatusResponse = await request(app)
       .patch(`/users/${userId}/status`)
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         status: false,
       });
@@ -52,9 +68,11 @@ describe("PATCH /users/:id/status", () => {
   });
 
   it("mengembalikan 404 jika user yang diupdate statusnya tidak ditemukan", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .patch("/users/999999/status")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         status: false,
       });
@@ -64,9 +82,11 @@ describe("PATCH /users/:id/status", () => {
   });
 
   it("mengembalikan 400 jika id tidak valid", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .patch("/users/invalid-id/status")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         status: false,
       });
@@ -77,9 +97,11 @@ describe("PATCH /users/:id/status", () => {
   });
 
   it("mengembalikan 400 jika payload status tidak valid", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const createResponse = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email: `update-status-invalid-${Date.now()}@example.com`,
         name: "User Update Status Invalid",
@@ -91,6 +113,7 @@ describe("PATCH /users/:id/status", () => {
     const response = await request(app)
       .patch(`/users/${userId}/status`)
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         status: "not-boolean",
       });

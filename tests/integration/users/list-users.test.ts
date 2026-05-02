@@ -1,6 +1,7 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { getPrisma } from "../../../src/config";
+import { createAccessTokenCookie } from "../../utils/auth";
 import { resetDatabase } from "../../utils/db";
 
 describe("GET /users", () => {
@@ -8,10 +9,21 @@ describe("GET /users", () => {
     await resetDatabase();
   });
 
-  it("mengembalikan list user dengan field yang benar jika ada data", async () => {
-    const listResponse = await request(app)
+  it("mengembalikan 401 jika belum login", async () => {
+    const response = await request(app)
       .get("/users")
       .set("Accept", "application/json");
+
+    expect(response.status).toBe(401);
+    expect(response.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
+  it("mengembalikan list user dengan field yang benar jika ada data", async () => {
+    const { cookie } = await createAccessTokenCookie();
+    const listResponse = await request(app)
+      .get("/users")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(listResponse.status).toBe(200);
     expect(Array.isArray(listResponse.body.data)).toBe(true);
@@ -38,9 +50,11 @@ describe("GET /users", () => {
   });
 
   it("mengembalikan user terurut desc berdasarkan id untuk kestabilan paging", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const listResponse = await request(app)
       .get("/users")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(listResponse.status).toBe(200);
     const users = listResponse.body.data as Array<{ id: number }>;
@@ -55,12 +69,14 @@ describe("GET /users", () => {
   });
 
   it("mendukung paging dengan page dan page_size tanpa duplikasi", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const pageSize = 2;
 
     const createUser = async (suffix: string) => {
       const response = await request(app)
         .post("/users")
         .set("Accept", "application/json")
+        .set("Cookie", [cookie])
         .send({
           email: `paging-user-${suffix}-${Date.now()}@example.com`,
           name: `Paging User ${suffix}`,
@@ -76,7 +92,8 @@ describe("GET /users", () => {
 
     const page1Response = await request(app)
       .get(`/users?page=1&page_size=${pageSize}`)
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(page1Response.status).toBe(200);
     expect(page1Response.body.meta).toEqual(
@@ -88,7 +105,8 @@ describe("GET /users", () => {
 
     const page2Response = await request(app)
       .get(`/users?page=2&page_size=${pageSize}`)
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(page2Response.status).toBe(200);
     expect(page2Response.body.meta).toEqual(
@@ -112,10 +130,12 @@ describe("GET /users", () => {
   });
 
   it("mendukung search global pada email dan name", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const createUser = async (email: string, name: string) => {
       const response = await request(app)
         .post("/users")
         .set("Accept", "application/json")
+        .set("Cookie", [cookie])
         .send({
           email,
           name,
@@ -129,7 +149,8 @@ describe("GET /users", () => {
 
     const response = await request(app)
       .get("/users?search=alice")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(response.status).toBe(200);
     const users = response.body.data as Array<{ email: string; name: string }>;
@@ -145,6 +166,7 @@ describe("GET /users", () => {
   });
 
   it("mendukung sorting berdasarkan name dengan id desc sebagai tie-breaker", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const prisma = getPrisma();
 
     const first = await prisma.user.create({
@@ -171,7 +193,8 @@ describe("GET /users", () => {
 
     const response = await request(app)
       .get("/users?order_field=name&order_dir=asc&page_size=10")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(response.status).toBe(200);
 

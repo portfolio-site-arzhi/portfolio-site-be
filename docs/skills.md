@@ -15,6 +15,7 @@ List skills (CMS)
 -----------------
 
 - Endpoint: `GET http://localhost:9000/skills`
+- Auth: Required (login)
 - Query params:
   - `search` (optional, mencari di `skill_groups.name` dan `skills.name`)
 
@@ -29,6 +30,7 @@ Detail skill (CMS)
 ------------------
 
 - Endpoint: `GET http://localhost:9000/skills/:id`
+- Auth: Required (login)
 
 Contoh cURL:
 
@@ -41,6 +43,7 @@ Create skill (CMS)
 ------------------
 
 - Endpoint: `POST http://localhost:9000/skills`
+- Auth: Required (login)
 - Content-Type: `application/json`
 
 Catatan:
@@ -70,6 +73,7 @@ Update skill (CMS)
 ------------------
 
 - Endpoint: `PUT http://localhost:9000/skills/:id`
+- Auth: Required (login)
 - Content-Type: `application/json`
 
 Catatan:
@@ -98,6 +102,7 @@ Delete skill (CMS)
 ------------------
 
 - Endpoint: `DELETE http://localhost:9000/skills/:id`
+- Auth: Required (login)
 
 Catatan:
 
@@ -115,6 +120,7 @@ Update sort skills (CMS)
 ------------------------
 
 - Endpoint: `PATCH http://localhost:9000/skills/sort`
+- Auth: Required (login)
 - Content-Type: `application/json`
 
 Body:
@@ -137,6 +143,7 @@ Landing skills (Public)
 -----------------------
 
 - Endpoint: `GET http://localhost:9000/landing/skills`
+- Auth: Tidak diperlukan (public)
 
 Catatan:
 

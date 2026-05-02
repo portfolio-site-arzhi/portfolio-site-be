@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { ExportController } from "../controllers/exportController";
 import { getPrisma } from "../config";
+import { createRequireAuthMiddleware } from "../middleware/authMiddleware";
 import { PrismaSiteConfigRepository } from "../repository/PrismaSiteConfigRepository";
 import { PrismaCertificationRepository } from "../repository/certificationRepository";
 import { PrismaEducationRepository } from "../repository/educationRepository";
@@ -40,7 +41,9 @@ export const registerExportRoutes = (app: Express) => {
     cvPdfExportService,
     portfolioPdfExportService,
   );
+  const requireAuth = createRequireAuthMiddleware();
 
+  app.use("/exports", requireAuth);
   app.get("/exports/cv", controller.exportCv);
   app.get("/exports/portfolios", controller.exportPortfolios);
 };

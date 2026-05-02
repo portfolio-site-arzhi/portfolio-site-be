@@ -1,13 +1,15 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { resetDatabase } from "../../utils/db";
+import { createAccessTokenCookie } from "../../utils/auth";
 
 const imageBuffer = Buffer.from("portfolio-image");
 
-const postPortfolio = (payload: Record<string, unknown>) =>
+const postPortfolio = (payload: Record<string, unknown>, cookie: string) =>
   request(app)
     .post("/portfolios")
     .set("Accept", "application/json")
+    .set("Cookie", [cookie])
     .field("payload", JSON.stringify(payload))
     .attach("image", imageBuffer, {
       filename: "portfolio.png",
@@ -20,40 +22,46 @@ describe("PATCH /portfolios/sort dan GET /landing/portfolios", () => {
   });
 
   it("update sort mengikuti urutan ids array (vuedraggable)", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const a = await postPortfolio({
       title: "Portfolio A",
       description: "Desc A",
       stacks: [],
-    });
+    }, cookie);
 
     const b = await postPortfolio({
       title: "Portfolio B",
       description: "Desc B",
       stacks: [],
-    });
+    }, cookie);
 
     const c = await postPortfolio({
       title: "Portfolio C",
       description: "Desc C",
       stacks: [],
-    });
+    }, cookie);
 
     const ids = [c.body.data.id, a.body.data.id, b.body.data.id];
     const updated = await request(app)
       .patch("/portfolios/sort")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({ ids });
 
     expect(updated.status).toBe(200);
     expect(updated.body.message).toBe("Urutan portfolio berhasil diperbarui");
     expect(updated.body.data).toBe(true);
 
-    const list = await request(app).get("/portfolios").set("Accept", "application/json");
+    const list = await request(app)
+      .get("/portfolios")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(list.body.data.map((item: { id: number }) => item.id)).toEqual(ids);
   });
 
   it("landing hanya mengembalikan data published yang waktunya sudah aktif dan detail by slug memuat field WYSIWYG locale", async () => {
+    const { cookie } = await createAccessTokenCookie();
     await postPortfolio({
       title: "Portfolio Publish",
       description: "Deskripsi publish",
@@ -68,14 +76,14 @@ describe("PATCH /portfolios/sort dan GET /landing/portfolios", () => {
       is_published: true,
       published_at: "2026-04-20T10:00:00.000Z",
       stacks: [{ name: "Node.js" }],
-    });
+    }, cookie);
 
     await postPortfolio({
       title: "Portfolio Draft",
       description: "Draft",
       is_published: false,
       stacks: [],
-    });
+    }, cookie);
 
     await postPortfolio({
       title: "Portfolio Scheduled",
@@ -83,7 +91,7 @@ describe("PATCH /portfolios/sort dan GET /landing/portfolios", () => {
       is_published: true,
       published_at: "2099-01-01T00:00:00.000Z",
       stacks: [],
-    });
+    }, cookie);
 
     const list = await request(app)
       .get("/landing/portfolios")
@@ -131,13 +139,14 @@ describe("PATCH /portfolios/sort dan GET /landing/portfolios", () => {
   });
 
   it("detail landing mengembalikan 404 untuk slug draft atau terjadwal", async () => {
+    const { cookie } = await createAccessTokenCookie();
     await postPortfolio({
       title: "Hidden Portfolio",
       description: "Desc",
       is_published: true,
       published_at: "2099-01-01T00:00:00.000Z",
       stacks: [],
-    });
+    }, cookie);
 
     const detail = await request(app)
       .get("/landing/portfolios/hidden-portfolio")

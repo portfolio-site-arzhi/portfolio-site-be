@@ -1,5 +1,6 @@
 import request from "supertest";
 import { app } from "../../../src";
+import { createAccessTokenCookie } from "../../utils/auth";
 import { resetDatabase } from "../../utils/db";
 
 describe("POST /site-configs/bulk", () => {
@@ -7,11 +8,24 @@ describe("POST /site-configs/bulk", () => {
     await resetDatabase();
   });
 
-  it("menyimpan semua konfigurasi landing (system, home, about, footer) dalam satu request", async () => {
+  it("mengembalikan 401 jika belum login", async () => {
     const response = await request(app)
       .post("/site-configs/bulk")
       .set("Accept", "application/json")
       .set("Content-Type", "application/json")
+      .send({});
+
+    expect(response.status).toBe(401);
+    expect(response.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
+  it("menyimpan semua konfigurasi landing (system, home, about, footer) dalam satu request", async () => {
+    const { cookie } = await createAccessTokenCookie();
+    const response = await request(app)
+      .post("/site-configs/bulk")
+      .set("Accept", "application/json")
+      .set("Content-Type", "application/json")
+      .set("Cookie", [cookie])
       .send({
         system: {
           primary_color: "#1976D2",
@@ -77,10 +91,12 @@ describe("POST /site-configs/bulk", () => {
   });
 
   it("mengembalikan 400 jika about dikirim tanpa address", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .post("/site-configs/bulk")
       .set("Accept", "application/json")
       .set("Content-Type", "application/json")
+      .set("Cookie", [cookie])
       .send({
         about: {
           value: {

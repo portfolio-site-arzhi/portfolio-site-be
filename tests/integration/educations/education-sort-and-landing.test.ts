@@ -1,6 +1,7 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { resetDatabase } from "../../utils/db";
+import { createAccessTokenCookie } from "../../utils/auth";
 
 describe("PATCH /educations/sort dan GET /landing/educations", () => {
   beforeEach(async () => {
@@ -8,9 +9,11 @@ describe("PATCH /educations/sort dan GET /landing/educations", () => {
   });
 
   it("update sort mengikuti urutan ids array (vuedraggable)", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const a = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "A",
         degree: "D1",
@@ -28,6 +31,7 @@ describe("PATCH /educations/sort dan GET /landing/educations", () => {
     const b = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "B",
         degree: "D2",
@@ -45,6 +49,7 @@ describe("PATCH /educations/sort dan GET /landing/educations", () => {
     const c = await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "C",
         degree: "D3",
@@ -63,21 +68,27 @@ describe("PATCH /educations/sort dan GET /landing/educations", () => {
     const updated = await request(app)
       .patch("/educations/sort")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({ ids });
 
     expect(updated.status).toBe(200);
     expect(updated.body.message).toBe("Urutan education berhasil diperbarui");
     expect(updated.body.data).toBe(true);
 
-    const list = await request(app).get("/educations").set("Accept", "application/json");
+    const list = await request(app)
+      .get("/educations")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(list.body.data.map((x: { id: number }) => x.id)).toEqual(ids);
   });
 
   it("landing hanya mengembalikan data aktif dengan locale id+en", async () => {
+    const { cookie } = await createAccessTokenCookie();
     await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Institut Public",
         degree: "Sarjana",
@@ -95,6 +106,7 @@ describe("PATCH /educations/sort dan GET /landing/educations", () => {
     await request(app)
       .post("/educations")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         institution_name: "Institut Hidden",
         degree: "Hidden",

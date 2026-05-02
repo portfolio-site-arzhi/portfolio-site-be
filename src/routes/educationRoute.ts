@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { EducationController } from "../controllers/educationController";
 import { EducationLandingController } from "../controllers/educationLandingController";
+import { createRequireAuthMiddleware } from "../middleware/authMiddleware";
 import { PrismaEducationRepository } from "../repository/educationRepository";
 import { EducationLandingService } from "../services/educationLandingService";
 import { EducationService } from "../services/educationService";
@@ -12,7 +13,9 @@ export const registerEducationRoutes = (app: Express) => {
 
   const controller = new EducationController(educationService);
   const landingController = new EducationLandingController(educationLandingService);
+  const requireAuth = createRequireAuthMiddleware();
 
+  app.use("/educations", requireAuth);
   app.get("/educations", controller.list);
   app.get("/educations/:id", controller.detail);
   app.post("/educations", controller.create);
@@ -22,4 +25,3 @@ export const registerEducationRoutes = (app: Express) => {
 
   app.get("/landing/educations", landingController.list);
 };
-

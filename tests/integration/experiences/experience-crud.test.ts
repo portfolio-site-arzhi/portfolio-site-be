@@ -1,16 +1,94 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { resetDatabase } from "../../utils/db";
+import { createAccessTokenCookie } from "../../utils/auth";
 
 describe("CRUD /experiences", () => {
   beforeEach(async () => {
     await resetDatabase();
   });
 
+  it("semua endpoint CMS experience mengembalikan 401 jika belum login", async () => {
+    const { cookie } = await createAccessTokenCookie();
+    const created = await request(app)
+      .post("/experiences")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie])
+      .send({
+        is_published: false,
+        role_id: "Protected",
+        role_en: "Protected",
+        company_name: "Company",
+        start_date: "2023-01-01",
+        end_date: "2024-01-01",
+        is_current: false,
+        description_id: "<p>Old</p>",
+        description_en: "<p>Old</p>",
+        skills: [],
+      });
+
+    expect(created.status).toBe(201);
+
+    const list = await request(app)
+      .get("/experiences")
+      .set("Accept", "application/json");
+    expect(list.status).toBe(401);
+    expect(list.body.errors).toContain("Token akses tidak ditemukan");
+
+    const detail = await request(app)
+      .get(`/experiences/${created.body.data.id}`)
+      .set("Accept", "application/json");
+    expect(detail.status).toBe(401);
+    expect(detail.body.errors).toContain("Token akses tidak ditemukan");
+
+    const create = await request(app)
+      .post("/experiences")
+      .set("Accept", "application/json")
+      .send({
+        is_published: true,
+        role_id: "Senior Frontend Developer",
+        role_en: "Senior Frontend Developer",
+        company_name: "Tech Solutions Inc.",
+        company_url: "https://example.com",
+        start_date: "2023-07-01",
+        end_date: null,
+        is_current: true,
+        description_id: "<p>Halo</p>",
+        description_en: "<p>Hello</p>",
+        skills: [],
+      });
+    expect(create.status).toBe(401);
+    expect(create.body.errors).toContain("Token akses tidak ditemukan");
+
+    const update = await request(app)
+      .put(`/experiences/${created.body.data.id}`)
+      .set("Accept", "application/json")
+      .send({
+        is_published: true,
+      });
+    expect(update.status).toBe(401);
+    expect(update.body.errors).toContain("Token akses tidak ditemukan");
+
+    const remove = await request(app)
+      .delete(`/experiences/${created.body.data.id}`)
+      .set("Accept", "application/json");
+    expect(remove.status).toBe(401);
+    expect(remove.body.errors).toContain("Token akses tidak ditemukan");
+
+    const sort = await request(app)
+      .patch("/experiences/sort")
+      .set("Accept", "application/json")
+      .send({ ids: [created.body.data.id] });
+    expect(sort.status).toBe(401);
+    expect(sort.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
   it("membuat experience baru dan mengembalikan 201", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .post("/experiences")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         is_published: true,
         role_id: "Senior Frontend Developer",
@@ -46,9 +124,11 @@ describe("CRUD /experiences", () => {
   });
 
   it("mengembalikan 400 jika end_date diisi saat is_current = true", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .post("/experiences")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         is_published: true,
         role_id: "Role ID",
@@ -67,9 +147,11 @@ describe("CRUD /experiences", () => {
   });
 
   it("list mengembalikan data dengan order stabil sort asc, id desc", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const first = await request(app)
       .post("/experiences")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         is_published: false,
         role_id: "Role 1",
@@ -86,6 +168,7 @@ describe("CRUD /experiences", () => {
     const second = await request(app)
       .post("/experiences")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         is_published: false,
         role_id: "Role 2",
@@ -102,7 +185,10 @@ describe("CRUD /experiences", () => {
     expect(first.status).toBe(201);
     expect(second.status).toBe(201);
 
-    const list = await request(app).get("/experiences").set("Accept", "application/json");
+    const list = await request(app)
+      .get("/experiences")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(Array.isArray(list.body.data)).toBe(true);
     expect(list.body.data.length).toBe(2);
@@ -111,18 +197,22 @@ describe("CRUD /experiences", () => {
   });
 
   it("detail mengembalikan 404 jika id tidak ditemukan", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .get("/experiences/999999")
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(response.status).toBe(404);
     expect(response.body.errors).toContain("Experience tidak ditemukan");
   });
 
   it("update dapat mengubah field dan sanitasi description", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const created = await request(app)
       .post("/experiences")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         is_published: false,
         role_id: "Role 1",
@@ -139,6 +229,7 @@ describe("CRUD /experiences", () => {
     const updated = await request(app)
       .put(`/experiences/${created.body.data.id}`)
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         is_published: true,
         description_id: "<p>New</p><script>alert(1)</script>",
@@ -155,9 +246,11 @@ describe("CRUD /experiences", () => {
   });
 
   it("delete mengembalikan 200 dan list kosong", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const created = await request(app)
       .post("/experiences")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         is_published: false,
         role_id: "Role 1",
@@ -173,13 +266,17 @@ describe("CRUD /experiences", () => {
 
     const deleted = await request(app)
       .delete(`/experiences/${created.body.data.id}`)
-      .set("Accept", "application/json");
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
 
     expect(deleted.status).toBe(200);
     expect(deleted.body.message).toBe("Experience berhasil dihapus");
     expect(deleted.body.data).toBe(true);
 
-    const list = await request(app).get("/experiences").set("Accept", "application/json");
+    const list = await request(app)
+      .get("/experiences")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
     expect(list.status).toBe(200);
     expect(list.body.data.length).toBe(0);
   });

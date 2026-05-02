@@ -1,6 +1,7 @@
 import request from "supertest";
 import { app } from "../../../src";
 import { getPrisma } from "../../../src/config";
+import { createAccessTokenCookie } from "../../utils/auth";
 import { resetDatabase } from "../../utils/db";
 
 describe("PUT /users/:id", () => {
@@ -13,12 +14,26 @@ describe("PUT /users/:id", () => {
     await prisma.$disconnect();
   });
 
+  it("mengembalikan 401 jika belum login", async () => {
+    const response = await request(app)
+      .put("/users/1")
+      .set("Accept", "application/json")
+      .send({
+        name: "New Name",
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
   it("mengupdate name user yang dibuat lewat endpoint create (password dikelola sistem)", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const prisma = getPrisma();
 
     const createResponse = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email: `update-user-${Date.now()}@example.com`,
         name: "Old Name",
@@ -39,6 +54,7 @@ describe("PUT /users/:id", () => {
     const updateResponse = await request(app)
       .put(`/users/${userId}`)
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "New Name",
       });
@@ -54,9 +70,11 @@ describe("PUT /users/:id", () => {
   });
 
   it("mengembalikan 404 jika user yang diupdate tidak ditemukan", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .put("/users/999999")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "Does Not Matter",
       });
@@ -66,9 +84,11 @@ describe("PUT /users/:id", () => {
   });
 
   it("mengembalikan 400 jika id tidak valid", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .put("/users/invalid-id")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "Any Name",
       });
@@ -79,9 +99,11 @@ describe("PUT /users/:id", () => {
   });
 
   it("mengembalikan 400 jika payload update tidak valid", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const createResponse = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email: `update-invalid-${Date.now()}@example.com`,
         name: "Valid Name",
@@ -93,6 +115,7 @@ describe("PUT /users/:id", () => {
     const response = await request(app)
       .put(`/users/${userId}`)
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         name: "",
       });

@@ -1,5 +1,6 @@
 import request from "supertest";
 import { app } from "../../../src";
+import { createAccessTokenCookie } from "../../utils/auth";
 import { resetDatabase } from "../../utils/db";
 
 describe("POST /users", () => {
@@ -7,10 +8,25 @@ describe("POST /users", () => {
     await resetDatabase();
   });
 
-  it("membuat user baru dengan payload valid dan mengembalikan 201", async () => {
+  it("mengembalikan 401 jika belum login", async () => {
     const response = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .send({
+        email: `create-user-${Date.now()}@example.com`,
+        name: "Create User",
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body.errors).toContain("Token akses tidak ditemukan");
+  });
+
+  it("membuat user baru dengan payload valid dan mengembalikan 201", async () => {
+    const { cookie } = await createAccessTokenCookie();
+    const response = await request(app)
+      .post("/users")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email: `create-user-${Date.now()}@example.com`,
         name: "Create User",
@@ -29,10 +45,12 @@ describe("POST /users", () => {
   });
 
   it("mengembalikan message sukses bahasa inggris jika Accept-Language=en", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .post("/users")
       .set("Accept", "application/json")
       .set("Accept-Language", "en-US")
+      .set("Cookie", [cookie])
       .send({
         email: `create-user-en-${Date.now()}@example.com`,
         name: "Create User EN",
@@ -43,9 +61,11 @@ describe("POST /users", () => {
   });
 
   it("mengembalikan 400 jika payload tidak valid", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const response = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email: "invalid-email",
         name: "",
@@ -57,11 +77,13 @@ describe("POST /users", () => {
   });
 
   it("mengembalikan 400 jika email sudah terdaftar", async () => {
+    const { cookie } = await createAccessTokenCookie();
     const email = `duplicate-user-${Date.now()}@example.com`;
 
     const first = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email,
         name: "First User",
@@ -73,6 +95,7 @@ describe("POST /users", () => {
     const second = await request(app)
       .post("/users")
       .set("Accept", "application/json")
+      .set("Cookie", [cookie])
       .send({
         email,
         name: "Second User",

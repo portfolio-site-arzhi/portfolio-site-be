@@ -1,5 +1,6 @@
 import request from "supertest";
 import { app } from "../../../src";
+import { createAccessTokenCookie } from "../../utils/auth";
 import { resetDatabase } from "../../utils/db";
 
 describe("GET /site-configs", () => {
@@ -22,10 +23,12 @@ describe("GET /site-configs", () => {
   });
 
   it("mengembalikan data landing yang ada", async () => {
+    const { cookie } = await createAccessTokenCookie();
     await request(app)
       .post("/site-configs/bulk")
       .set("Accept", "application/json")
       .set("Content-Type", "application/json")
+      .set("Cookie", [cookie])
       .send({
         system: {
           primary_color: "#FF0000",
@@ -68,10 +71,12 @@ describe("GET /site-configs", () => {
   });
 
   it("mengembalikan data landing dengan multi-language (description, about_me)", async () => {
+    const { cookie } = await createAccessTokenCookie();
     await request(app)
       .post("/site-configs/bulk")
       .set("Accept", "application/json")
       .set("Content-Type", "application/json")
+      .set("Cookie", [cookie])
       .send({
         home: {
           status_file: 0,
