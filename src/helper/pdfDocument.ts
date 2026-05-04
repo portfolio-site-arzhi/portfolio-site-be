@@ -91,7 +91,6 @@ export const writePdfParagraph = (
   doc: PdfDocument,
   value: string | null | undefined,
   options?: {
-    fontName?: "Helvetica" | "Helvetica-Bold" | "Helvetica-Oblique";
     fontSize?: number;
     paragraphGap?: number;
   },
@@ -102,7 +101,7 @@ export const writePdfParagraph = (
 
   ensurePdfSpace(doc, 30);
   doc
-    .font(options?.fontName ?? "Helvetica")
+    .font("Helvetica")
     .fontSize(options?.fontSize ?? 10.5)
     .fillColor("#111111")
     .text(value, {
@@ -169,7 +168,7 @@ export const writePdfImage = (
   return true;
 };
 
-export type PdfTextBlock =
+type PdfTextBlock =
   | {
       type: "paragraph";
       text: string;
@@ -179,7 +178,7 @@ export type PdfTextBlock =
       items: string[];
     };
 
-export const parsePdfTextBlocks = (value: string): PdfTextBlock[] => {
+const parsePdfTextBlocks = (value: string): PdfTextBlock[] => {
   const lines = value.split("\n").map((line) => line.trim());
   const blocks: PdfTextBlock[] = [];
   let paragraphLines: string[] = [];
