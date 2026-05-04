@@ -6,10 +6,24 @@ import { getPrisma } from "../../../src/config";
 import { resetDatabase } from "../../utils/db";
 import { createAccessTokenCookie } from "../../utils/auth";
 
+type BinaryParserResponse = {
+  on(event: "data", handler: (chunk: Buffer | string) => void): void;
+  on(event: "end", handler: () => void): void;
+  on(event: "error", handler: (error: Error) => void): void;
+};
+
+const isBinaryParserResponse = (value: unknown): value is BinaryParserResponse =>
+  typeof value === "object" && value !== null && "on" in value;
+
 const binaryParser = (
-  res: NodeJS.ReadableStream,
-  callback: (error: Error | null, body: Buffer) => void,
-) => {
+  res: unknown,
+  callback: (error: Error | null, body: unknown) => void,
+): void => {
+  if (!isBinaryParserResponse(res)) {
+    callback(new Error("Invalid binary parser response"), Buffer.alloc(0));
+    return;
+  }
+
   const chunks: Buffer[] = [];
 
   res.on("data", (chunk) => {
@@ -25,7 +39,10 @@ const binaryParser = (
 
 const extractPdfText = (buffer: Buffer): string =>
   Array.from(buffer.toString("latin1").matchAll(/<([0-9A-Fa-f]+)>/g))
-    .map((match) => Buffer.from(match[1], "hex").toString("latin1"))
+    .flatMap((match) => {
+      const value = match[1];
+      return value ? [Buffer.from(value, "hex").toString("latin1")] : [];
+    })
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
@@ -143,6 +160,26 @@ describe("GET /exports/*.pdf", () => {
       },
     });
 
+    await prisma.experience.create({
+      data: {
+        sort: 2,
+        is_published: true,
+        role_id: "Consultant Developer",
+        role_en: "Consultant Developer",
+        company_name: "Beta Studio",
+        company_url: null,
+        start_date: new Date("2021-03-01"),
+        end_date: new Date("2023-05-01"),
+        is_current: false,
+        description_id:
+          "<p>Frontend Developer at Client A</p><ul><li><p>Membangun dashboard operasional</p></li></ul><p>Backend Developer at Client B</p><ul><li><p>Menyederhanakan query reporting</p></li></ul>",
+        description_en:
+          "<p>Frontend Developer at Client A</p><ul><li><p>Built operations dashboard</p></li></ul><p>Backend Developer at Client B</p><ul><li><p>Simplified reporting queries</p></li></ul>",
+        created_by: 0,
+        updated_by: 0,
+      },
+    });
+
     await prisma.education.create({
       data: {
         institution_name: "Tech University",
@@ -254,10 +291,17 @@ describe("GET /exports/*.pdf", () => {
     expect(pdfText).not.toContain(normalizePdfAssertion("https://demo.example.com/project-draft"));
     expect(pdfText).toContain(normalizePdfAssertion("Built internal APIs"));
     expect(pdfText).toContain(normalizePdfAssertion("Improved query performance"));
+    expect(pdfText).toContain(normalizePdfAssertion("Frontend Developer at Client A"));
+    expect(pdfText).toContain(normalizePdfAssertion("Built operations dashboard"));
+    expect(pdfText).toContain(normalizePdfAssertion("Backend Developer at Client B"));
+    expect(pdfText).toContain(normalizePdfAssertion("Simplified reporting queries"));
     expect(pdfText).not.toContain(normalizePdfAssertion("Exported at"));
     expectTextOrder(pdfText, [
       "Core Skills",
       "Built internal APIs",
+      "Consultant Developer - Beta Studio",
+      "Frontend Developer at Client A",
+      "Backend Developer at Client B",
       "Bachelor of Computer Science",
       "AWS Associate",
       "https://demo.example.com/project-live",

@@ -40,7 +40,7 @@ describe("GET /users", () => {
       return;
     }
 
-    const first = users[0];
+    const first = users[0]!;
     expect(typeof first.id).toBe("number");
     expect(typeof first.email).toBe("string");
     expect(typeof first.name).toBe("string");
@@ -64,7 +64,7 @@ describe("GET /users", () => {
     }
 
     for (let i = 1; i < users.length; i += 1) {
-      expect(users[i - 1].id).toBeGreaterThanOrEqual(users[i].id);
+      expect(users[i - 1]!.id).toBeGreaterThanOrEqual(users[i]!.id);
     }
   });
 
@@ -205,7 +205,7 @@ describe("GET /users", () => {
       return;
     }
 
-    expect(filtered[0].id).toBeGreaterThan(filtered[1].id);
+    expect(filtered[0]!.id).toBeGreaterThan(filtered[1]!.id);
     expect(response.body.meta).toEqual(
       expect.objectContaining({
         order_field: "name",

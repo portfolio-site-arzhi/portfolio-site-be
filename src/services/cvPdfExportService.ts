@@ -12,7 +12,10 @@ import { getLandingPageUrl } from "../helper/landingPageUrl";
 import { pickLocalizedValue } from "../helper/localizedText";
 import {
   createPdfBuffer,
+  parsePdfTextBlocks,
+  type PdfDocument,
   writePdfBulletList,
+  writePdfDivider,
   writePdfParagraph,
   writePdfRichText,
   writePdfSectionTitle,
@@ -56,17 +59,46 @@ const buildSummaryParagraphs = (
   return Array.from(new Set(summaryValues));
 };
 
-const buildExperienceLines = (
+const buildExperienceDescription = (
   locale: ResponseLocale,
   experience: ExperienceLandingItem,
-): string[] => {
-  const description = htmlToPlainText(pickLocalizedValue(locale, experience.description));
-  const skills =
-    experience.skills.length > 0
-      ? `Skills: ${experience.skills.map((skill) => skill.skill_name).join(", ")}`
-      : null;
+): string | null => htmlToPlainText(pickLocalizedValue(locale, experience.description));
 
-  return [description, skills].filter((value): value is string => Boolean(value));
+const buildExperienceSkillsLine = (experience: ExperienceLandingItem): string | null =>
+  experience.skills.length > 0
+    ? `Skills: ${experience.skills.map((skill) => skill.skill_name).join(", ")}`
+    : null;
+
+const renderExperienceDescription = (
+  doc: PdfDocument,
+  value: string | null,
+): void => {
+  if (!value) {
+    return;
+  }
+
+  const blocks = parsePdfTextBlocks(value);
+
+  for (const [index, block] of blocks.entries()) {
+    if (block.type === "bullets") {
+      writePdfBulletList(doc, block.items);
+
+      if (index < blocks.length - 1) {
+        doc.moveDown(0.1);
+      }
+
+      continue;
+    }
+
+    const nextBlock = blocks[index + 1];
+    const isSubheading = nextBlock?.type === "bullets";
+
+    writePdfParagraph(doc, block.text, {
+      fontName: isSubheading ? "Helvetica-Bold" : "Helvetica",
+      fontSize: isSubheading ? 10.6 : 10.5,
+      paragraphGap: isSubheading ? 2 : 6,
+    });
+  }
 };
 
 const buildEducationLines = (
@@ -192,7 +224,7 @@ export class CvPdfExportService {
 
         if (experiences.length > 0) {
           writePdfSectionTitle(doc, "Professional Experience");
-          for (const experience of experiences) {
+          for (const [index, experience] of experiences.entries()) {
             writePdfParagraph(
               doc,
               `${pickLocalizedValue(locale, experience.role) ?? "Role"} - ${experience.company_name}`,
@@ -210,9 +242,25 @@ export class CvPdfExportService {
               ]),
               { fontSize: 9.5, paragraphGap: 4 },
             );
-            for (const line of buildExperienceLines(locale, experience)) {
-              writePdfRichText(doc, line);
+
+            renderExperienceDescription(
+              doc,
+              buildExperienceDescription(locale, experience),
+            );
+
+            const skillsLine = buildExperienceSkillsLine(experience);
+            if (skillsLine) {
+              writePdfParagraph(doc, skillsLine, {
+                fontSize: 9.5,
+                paragraphGap: 4,
+              });
             }
+
+            if (index < experiences.length - 1) {
+              writePdfDivider(doc);
+              continue;
+            }
+
             doc.moveDown(0.2);
           }
         }

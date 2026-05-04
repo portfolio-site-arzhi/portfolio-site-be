@@ -91,6 +91,7 @@ export const writePdfParagraph = (
   doc: PdfDocument,
   value: string | null | undefined,
   options?: {
+    fontName?: "Helvetica" | "Helvetica-Bold" | "Helvetica-Oblique";
     fontSize?: number;
     paragraphGap?: number;
   },
@@ -101,7 +102,7 @@ export const writePdfParagraph = (
 
   ensurePdfSpace(doc, 30);
   doc
-    .font("Helvetica")
+    .font(options?.fontName ?? "Helvetica")
     .fontSize(options?.fontSize ?? 10.5)
     .fillColor("#111111")
     .text(value, {
@@ -168,7 +169,7 @@ export const writePdfImage = (
   return true;
 };
 
-type PdfTextBlock =
+export type PdfTextBlock =
   | {
       type: "paragraph";
       text: string;
@@ -178,7 +179,7 @@ type PdfTextBlock =
       items: string[];
     };
 
-const parsePdfTextBlocks = (value: string): PdfTextBlock[] => {
+export const parsePdfTextBlocks = (value: string): PdfTextBlock[] => {
   const lines = value.split("\n").map((line) => line.trim());
   const blocks: PdfTextBlock[] = [];
   let paragraphLines: string[] = [];
@@ -229,6 +230,45 @@ const parsePdfTextBlocks = (value: string): PdfTextBlock[] => {
   flushBullets();
 
   return blocks;
+};
+
+export const writePdfDivider = (
+  doc: PdfDocument,
+  options?: {
+    color?: string;
+    lineWidth?: number;
+    spacingBefore?: number;
+    spacingAfter?: number;
+  },
+): void => {
+  const spacingBefore = options?.spacingBefore ?? 0.25;
+  const spacingAfter = options?.spacingAfter ?? 0.45;
+  const estimatedHeight = 20;
+  const maxY = doc.page.height - doc.page.margins.bottom;
+
+  if (doc.y + estimatedHeight > maxY) {
+    doc.addPage();
+    return;
+  }
+
+  if (spacingBefore > 0) {
+    doc.moveDown(spacingBefore);
+  }
+
+  const lineY = doc.y;
+
+  doc
+    .save()
+    .moveTo(doc.page.margins.left, lineY)
+    .lineTo(doc.page.width - doc.page.margins.right, lineY)
+    .lineWidth(options?.lineWidth ?? 0.6)
+    .strokeColor(options?.color ?? "#D0D0D0")
+    .stroke()
+    .restore();
+
+  if (spacingAfter > 0) {
+    doc.moveDown(spacingAfter);
+  }
 };
 
 export const writePdfRichText = (

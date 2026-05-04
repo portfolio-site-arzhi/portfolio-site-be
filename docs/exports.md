@@ -20,6 +20,7 @@ Catatan penting:
 - Konten rich editor akan dirapikan menjadi paragraf dan bullet list yang lebih terbaca di PDF, bukan tag HTML mentah.
 - Tanggal `Exported at` tidak ditampilkan di hasil PDF.
 - Header CV menampilkan informasi utama di bagian atas, termasuk email, address, LinkedIn, dan GitHub jika tersedia di site configuration.
+- Setiap entri pada section `Professional Experience` dipisahkan divider tipis agar lebih mudah dipindai tanpa menambah teks yang bisa mengganggu format ATS.
 
 Export CV ATS PDF
 -----------------
