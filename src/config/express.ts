@@ -9,6 +9,18 @@ import { configureRateLimit } from "./rateLimit";
 
 export const configureExpress = (app: Express) => {
   app.set("query parser", (str: string) => qs.parse(str));
+  const trustProxy = process.env.TRUST_PROXY?.trim();
+  if (trustProxy) {
+    if (trustProxy === "true" || trustProxy === "false") {
+      app.set("trust proxy", trustProxy === "true");
+    } else {
+      const trustProxyNumber = Number(trustProxy);
+      app.set(
+        "trust proxy",
+        Number.isInteger(trustProxyNumber) ? trustProxyNumber : trustProxy,
+      );
+    }
+  }
 
   const isProduction = process.env.NODE_ENV !== "development";
   const corsOrigins = (process.env.CORS_ORIGINS ?? "")

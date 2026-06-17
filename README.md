@@ -35,7 +35,7 @@ Backend API untuk CMS dan landing page portfolio pribadi. Project ini dibangun d
 - Database: PostgreSQL
 - Validation: Zod
 - Testing: Jest + Supertest
-- Containerization: Docker + Docker Compose + Nginx
+- Containerization: Docker + Docker Compose
 
 ## Prasyarat
 
@@ -117,6 +117,13 @@ docker compose exec portfolio_site_be npm run seed
 
 - `http://localhost:9000`
 - Health check: `http://localhost:9000/health`
+
+Catatan deployment:
+
+- Backend dipublish hanya ke loopback host melalui `127.0.0.1:${PORT}:9000`.
+- Jika server memakai nginx di host, arahkan `proxy_pass` ke `http://127.0.0.1:9000`.
+- Jika Anda butuh batas upload seperti sebelumnya, pindahkan `client_max_body_size 10m;` ke konfigurasi nginx host.
+- Jika jalur request adalah `client -> Cloudflare -> nginx host -> backend`, gunakan `TRUST_PROXY=2` agar pembacaan IP client dan rate limit tetap akurat.
 
 ## Testing
 

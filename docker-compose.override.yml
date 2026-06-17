@@ -14,13 +14,6 @@ services:
     networks:
       - portfolio_site_be_network
 
-  portfolio_site_be_nginx:
-    container_name: portfolio_site_be_nginx
-    restart: "no"
-    networks:
-      - portfolio_site_be_network
-      - global_portfolio_site_network
-
 volumes:
   postgresportfoliosite: {}
 
