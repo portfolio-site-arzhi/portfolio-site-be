@@ -2,6 +2,11 @@ export interface SkillItemInput {
   name: string;
 }
 
+export interface SkillGroupImportInput {
+  name: string;
+  skills: SkillItemInput[];
+}
+
 export interface SkillListQueryParams {
   skip?: number;
   take?: number;

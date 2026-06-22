@@ -1,4 +1,4 @@
-import type { Skill } from "../model";
+import type { Skill, SkillGroupImportInput } from "../model";
 import type { SkillRepository } from "../repository/contracts/skillRepository";
 import {
   throwSkillDomainErrorIfPrismaError,
@@ -59,6 +59,28 @@ export class SkillService {
       throwSkillDomainErrorIfPrismaError(error);
       throw error;
     }
+  }
+
+  async importSkills(input: {
+    skillGroups: SkillGroupImportInput[];
+  }): Promise<Skill[]> {
+    const maxSort = await this.skillRepository.getMaxSort();
+    const createdSkills: Skill[] = [];
+
+    for (const [index, skillGroup] of input.skillGroups.entries()) {
+      const createdSkill = await this.skillRepository.createSkill({
+        name: skillGroup.name,
+        displayOrder: maxSort + index + 1,
+        isActive: true,
+        skills: skillGroup.skills,
+        createdBy: 0,
+        updatedBy: 0,
+      });
+
+      createdSkills.push(createdSkill);
+    }
+
+    return createdSkills;
   }
 
   async deleteSkill(id: number): Promise<void> {

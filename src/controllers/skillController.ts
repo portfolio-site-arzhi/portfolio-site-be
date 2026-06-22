@@ -3,16 +3,21 @@ import { ZodError } from "zod";
 import { logger } from "../config";
 import { getSkillSuccessMessage } from "../i18n/skillSuccessMessages";
 import type { SkillSuccessMessageKey } from "../model";
+import { sendAttachmentBuffer } from "../helper/attachmentResponse";
 import {
   handleDomainError,
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
 import { resolveResponseLocale } from "../helper/responseLocale";
+import { toSkillResponse } from "../helper/skillResponse";
+import { SkillExcelService } from "../services/skillExcelService";
 import { SkillService } from "../services/skillService";
 import {
   validateCreateSkill,
+  validateImportSkillWorkbook,
   validateListSkillsQuery,
+  validateSkillImportFileUpload,
   validateSkillIdParam,
   validateUpdateSkill,
   validateUpdateSkillSort,
@@ -27,7 +32,10 @@ const getLocalizedSkillSuccessMessage = (
 };
 
 export class SkillController {
-  constructor(private readonly skillService: SkillService) {}
+  constructor(
+    private readonly skillService: SkillService,
+    private readonly skillExcelService: SkillExcelService,
+  ) {}
 
   list = async (req: Request, res: Response) => {
     try {
@@ -37,22 +45,7 @@ export class SkillController {
       });
 
       res.status(200).json({
-        data: skills.map((skill) => ({
-          id: skill.id,
-          name: skill.name,
-          display_order: skill.display_order,
-          is_active: skill.is_active,
-          created_at: skill.created_at,
-          updated_at: skill.updated_at,
-          skills: skill.skills.map((skillItem) => ({
-            id: skillItem.id,
-            skill_group_id: skillItem.skill_group_id,
-            name: skillItem.name,
-            display_order: skillItem.display_order,
-            created_at: skillItem.created_at,
-            updated_at: skillItem.updated_at,
-          })),
-        })),
+        data: skills.map(toSkillResponse),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -70,22 +63,7 @@ export class SkillController {
       const skill = await this.skillService.getSkillById(id);
 
       res.status(200).json({
-        data: {
-          id: skill.id,
-          name: skill.name,
-          display_order: skill.display_order,
-          is_active: skill.is_active,
-          created_at: skill.created_at,
-          updated_at: skill.updated_at,
-          skills: skill.skills.map((skillItem) => ({
-            id: skillItem.id,
-            skill_group_id: skillItem.skill_group_id,
-            name: skillItem.name,
-            display_order: skillItem.display_order,
-            created_at: skillItem.created_at,
-            updated_at: skillItem.updated_at,
-          })),
-        },
+        data: toSkillResponse(skill),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -120,22 +98,7 @@ export class SkillController {
 
       res.status(201).json({
         message: getLocalizedSkillSuccessMessage(req, "SKILL_CREATED_SUCCESS"),
-        data: {
-          id: skill.id,
-          name: skill.name,
-          display_order: skill.display_order,
-          is_active: skill.is_active,
-          created_at: skill.created_at,
-          updated_at: skill.updated_at,
-          skills: skill.skills.map((skillItem) => ({
-            id: skillItem.id,
-            skill_group_id: skillItem.skill_group_id,
-            name: skillItem.name,
-            display_order: skillItem.display_order,
-            created_at: skillItem.created_at,
-            updated_at: skillItem.updated_at,
-          })),
-        },
+        data: toSkillResponse(skill),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -161,22 +124,7 @@ export class SkillController {
 
       res.status(200).json({
         message: getLocalizedSkillSuccessMessage(req, "SKILL_UPDATED_SUCCESS"),
-        data: {
-          id: skill.id,
-          name: skill.name,
-          display_order: skill.display_order,
-          is_active: skill.is_active,
-          created_at: skill.created_at,
-          updated_at: skill.updated_at,
-          skills: skill.skills.map((skillItem) => ({
-            id: skillItem.id,
-            skill_group_id: skillItem.skill_group_id,
-            name: skillItem.name,
-            display_order: skillItem.display_order,
-            created_at: skillItem.created_at,
-            updated_at: skillItem.updated_at,
-          })),
-        },
+        data: toSkillResponse(skill),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -197,6 +145,86 @@ export class SkillController {
       }
 
       handleUnexpectedError(res, error, logger, "Update skill error");
+    }
+  };
+
+  import = async (req: Request, res: Response) => {
+    try {
+      const fileValidationError =
+        (req as Request & { fileValidationError?: string }).fileValidationError ??
+        undefined;
+      const uploadedFile = req.file;
+      validateSkillImportFileUpload({
+        ...(typeof fileValidationError === "string" ? { fileValidationError } : {}),
+        hasFile: Boolean(uploadedFile),
+      });
+
+      if (!uploadedFile) {
+        return;
+      }
+
+      const rows = await this.skillExcelService.parseImportFile(uploadedFile.buffer);
+      const input = validateImportSkillWorkbook(rows);
+      const skillItemsByGroupCode = new Map<string, { name: string }[]>();
+
+      input.skills.forEach((skillItem) => {
+        const items = skillItemsByGroupCode.get(skillItem.group_code) ?? [];
+        items.push({ name: skillItem.name });
+        skillItemsByGroupCode.set(skillItem.group_code, items);
+      });
+
+      const skills = await this.skillService.importSkills({
+        skillGroups: input.skill_groups.map((skillGroup) => ({
+          name: skillGroup.name,
+          skills: skillItemsByGroupCode.get(skillGroup.code) ?? [],
+        })),
+      });
+
+      res.status(200).json({
+        message: getLocalizedSkillSuccessMessage(req, "SKILL_IMPORTED_SUCCESS"),
+        data: skills.map(toSkillResponse),
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        handleZodError(res, error);
+        return;
+      }
+
+      if (
+        error instanceof Error &&
+        handleDomainError(res, error, {
+          SKILL_IMPORT_INVALID_FILE: {
+            status: 400,
+            messages: ["File Excel skill tidak valid"],
+          },
+          SKILL_IMPORT_GROUPS_WORKSHEET_NOT_FOUND: {
+            status: 400,
+            messages: ["Worksheet skill_groups tidak ditemukan di file Excel"],
+          },
+          SKILL_IMPORT_SKILLS_WORKSHEET_NOT_FOUND: {
+            status: 400,
+            messages: ["Worksheet skills tidak ditemukan di file Excel"],
+          },
+        })
+      ) {
+        return;
+      }
+
+      handleUnexpectedError(res, error, logger, "Import skill error");
+    }
+  };
+
+  export = async (_req: Request, res: Response) => {
+    try {
+      const skills = await this.skillService.listSkills();
+      const file = await this.skillExcelService.exportSkills(skills);
+      sendAttachmentBuffer(res, {
+        filename: file.filename,
+        buffer: file.buffer,
+        contentType: this.skillExcelService.getContentType(),
+      });
+    } catch (error) {
+      handleUnexpectedError(res, error, logger, "Export skill error");
     }
   };
 
@@ -221,10 +249,6 @@ export class SkillController {
           SKILL_NOT_FOUND: {
             status: 404,
             messages: ["Skill tidak ditemukan"],
-          },
-          SKILL_HAS_CHILDREN: {
-            status: 400,
-            messages: ["Skill masih memiliki child skills"],
           },
         })
       ) {

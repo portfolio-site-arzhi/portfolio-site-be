@@ -12,16 +12,9 @@ const isPrismaErrorWithCode = (error: unknown): error is PrismaErrorWithCode => 
 const isSkillNotFoundPrismaError = (error: unknown): error is PrismaErrorWithCode =>
   isPrismaErrorWithCode(error) && error.code === "P2025";
 
-const isSkillHasChildrenPrismaError = (error: unknown): error is PrismaErrorWithCode =>
-  isPrismaErrorWithCode(error) && error.code === "P2003";
-
 export const throwSkillDomainErrorIfPrismaError = (error: unknown): void => {
   if (isSkillNotFoundPrismaError(error)) {
     throw new Error("SKILL_NOT_FOUND");
-  }
-
-  if (isSkillHasChildrenPrismaError(error)) {
-    throw new Error("SKILL_HAS_CHILDREN");
   }
 };
 

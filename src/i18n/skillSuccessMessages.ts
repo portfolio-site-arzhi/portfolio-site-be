@@ -20,6 +20,10 @@ const SKILL_SUCCESS_MESSAGES: Record<
     id: "Urutan skill berhasil diperbarui",
     en: "Skill sort order updated successfully",
   },
+  SKILL_IMPORTED_SUCCESS: {
+    id: "Skill berhasil diimport",
+    en: "Skill imported successfully",
+  },
 };
 
 export const getSkillSuccessMessage = (

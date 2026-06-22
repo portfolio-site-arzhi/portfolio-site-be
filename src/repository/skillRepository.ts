@@ -152,9 +152,14 @@ export class PrismaSkillRepository implements SkillRepository {
   }
 
   async deleteSkill(id: number): Promise<number> {
-    const result = await this.prisma.skillGroup.deleteMany({
-      where: { id },
-    });
+    const [, result] = await this.prisma.$transaction([
+      this.prisma.skill.deleteMany({
+        where: { skill_group_id: id },
+      }),
+      this.prisma.skillGroup.deleteMany({
+        where: { id },
+      }),
+    ]);
 
     return result.count;
   }

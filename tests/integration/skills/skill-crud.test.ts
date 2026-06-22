@@ -164,7 +164,7 @@ describe("CRUD /skills", () => {
     ).toEqual([1, 2]);
   });
 
-  it("delete ditolak jika parent masih punya child skill", async () => {
+  it("delete parent ikut menghapus child skill yang masih terhubung", async () => {
     const { cookie } = await createAccessTokenCookie();
     const created = await request(app)
       .post("/skills")
@@ -181,8 +181,17 @@ describe("CRUD /skills", () => {
       .set("Accept", "application/json")
       .set("Cookie", [cookie]);
 
-    expect(deleted.status).toBe(400);
-    expect(deleted.body.errors).toContain("Skill masih memiliki child skills");
+    expect(deleted.status).toBe(200);
+    expect(deleted.body.message).toBe("Skill berhasil dihapus");
+    expect(deleted.body.data).toBe(true);
+
+    const list = await request(app)
+      .get("/skills")
+      .set("Accept", "application/json")
+      .set("Cookie", [cookie]);
+
+    expect(list.status).toBe(200);
+    expect(list.body.data).toEqual([]);
   });
 
   it("delete berhasil jika child sudah kosong", async () => {
