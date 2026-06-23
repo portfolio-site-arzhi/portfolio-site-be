@@ -67,6 +67,34 @@ export const updatePortfolioSchema = portfolioBaseSchema
     stacks: z.array(stackSchema).optional(),
   });
 
+export const importPortfolioSchema = z.object({
+  portfolios: z.array(createPortfolioSchema).min(1, "Daftar portfolios tidak boleh kosong"),
+});
+
+const portfolioImportFileUploadSchema = z
+  .object({
+    fileValidationError: z.string().optional(),
+    hasFile: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    if (typeof data.fileValidationError === "string" && data.fileValidationError) {
+      ctx.addIssue({
+        code: "custom",
+        message: data.fileValidationError,
+        path: ["file"],
+      });
+      return;
+    }
+
+    if (!data.hasFile) {
+      ctx.addIssue({
+        code: "custom",
+        message: "File JSON wajib diupload",
+        path: ["file"],
+      });
+    }
+  });
+
 export const listPortfoliosQuerySchema = z.object({
   search: z.string().trim().min(1).optional(),
 });
@@ -98,6 +126,7 @@ export const landingPortfoliosQuerySchema = z.object({});
 
 export type CreatePortfolioInputHttp = z.infer<typeof createPortfolioSchema>;
 export type UpdatePortfolioInputHttp = z.infer<typeof updatePortfolioSchema>;
+export type ImportPortfolioInputHttp = z.infer<typeof importPortfolioSchema>;
 export type ListPortfoliosQueryInputHttp = z.infer<typeof listPortfoliosQuerySchema>;
 export type UpdatePortfolioSortInputHttp = z.infer<typeof updatePortfolioSortSchema>;
 export type LandingPortfoliosQueryInputHttp = z.infer<typeof landingPortfoliosQuerySchema>;
@@ -107,6 +136,9 @@ export const validateCreatePortfolio = (data: unknown): CreatePortfolioInputHttp
 
 export const validateUpdatePortfolio = (data: unknown): UpdatePortfolioInputHttp =>
   updatePortfolioSchema.parse(data);
+
+export const validateImportPortfolio = (data: unknown): ImportPortfolioInputHttp =>
+  importPortfolioSchema.parse(data);
 
 export const validateListPortfoliosQuery = (
   query: unknown,
@@ -147,6 +179,10 @@ export const validateCreatePortfolioFileUpload = (params: {
   }
 
   return filename;
+};
+
+export const validatePortfolioImportFileUpload = (data: unknown): void => {
+  portfolioImportFileUploadSchema.parse(data);
 };
 
 export const validateUpdatePortfolioFileUpload = (params: {

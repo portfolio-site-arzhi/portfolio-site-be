@@ -20,6 +20,10 @@ const PORTFOLIO_SUCCESS_MESSAGES: Record<
     id: "Urutan portfolio berhasil diperbarui",
     en: "Portfolio sort order updated successfully",
   },
+  PORTFOLIO_IMPORTED_SUCCESS: {
+    id: "Portfolio berhasil diimport",
+    en: "Portfolio imported successfully",
+  },
 };
 
 export const getPortfolioSuccessMessage = (

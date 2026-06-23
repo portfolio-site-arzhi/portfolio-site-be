@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { Portfolio } from "../model";
+import type { Portfolio, PortfolioCreateServiceInput } from "../model";
 import { sanitizeWysiwygHtml } from "../helper/htmlSanitizer";
 import { createSlugCandidate, createSlugFromTitle } from "../helper/slug";
 import type { PortfolioRepository } from "../repository/contracts/portfolioRepository";
@@ -53,6 +53,34 @@ export class PortfolioService {
     throw new Error("PORTFOLIO_SLUG_ALREADY_EXISTS");
   }
 
+  private async createPortfolioRecord(
+    input: PortfolioCreateServiceInput,
+    displayOrder: number,
+  ): Promise<Portfolio> {
+    const slug = await this.generateUniqueSlug(input.title);
+
+    return this.portfolioRepository.createPortfolio({
+      slug,
+      title: input.title,
+      description: input.description,
+      descriptionEn: input.descriptionEn,
+      contribution: sanitizeOptionalHtml(input.contribution),
+      contributionEn: sanitizeOptionalHtml(input.contributionEn),
+      outcome: sanitizeOptionalHtml(input.outcome),
+      outcomeEn: sanitizeOptionalHtml(input.outcomeEn),
+      image: input.image,
+      role: input.role,
+      liveUrl: input.liveUrl,
+      githubUrl: input.githubUrl,
+      displayOrder,
+      isPublished: input.isPublished,
+      publishedAt: input.publishedAt,
+      stacks: input.stacks,
+      createdBy: 0,
+      updatedBy: 0,
+    });
+  }
+
   async listPortfolios(params?: { search?: string }): Promise<Portfolio[]> {
     return this.portfolioRepository.findAll({
       ...(typeof params?.search === "string" ? { search: params.search } : {}),
@@ -64,47 +92,32 @@ export class PortfolioService {
     return validatePortfolioExists(portfolio);
   }
 
-  async createPortfolio(input: {
-    title: string;
-    description: string;
-    descriptionEn: string | null;
-    contribution: string | null;
-    contributionEn: string | null;
-    outcome: string | null;
-    outcomeEn: string | null;
-    image: string | null;
-    role: string | null;
-    liveUrl: string | null;
-    githubUrl: string | null;
-    isPublished: boolean;
-    publishedAt: Date | null;
-    stacks: { name: string }[];
-  }): Promise<Portfolio> {
+  async createPortfolio(input: PortfolioCreateServiceInput): Promise<Portfolio> {
     try {
       const maxDisplayOrder = await this.portfolioRepository.getMaxDisplayOrder();
-      const nextDisplayOrder = maxDisplayOrder + 1;
-      const slug = await this.generateUniqueSlug(input.title);
+      return await this.createPortfolioRecord(input, maxDisplayOrder + 1);
+    } catch (error) {
+      throwPortfolioDomainErrorIfPrismaError(error);
+      throw error;
+    }
+  }
 
-      return await this.portfolioRepository.createPortfolio({
-        slug,
-        title: input.title,
-        description: input.description,
-        descriptionEn: input.descriptionEn,
-        contribution: sanitizeOptionalHtml(input.contribution),
-        contributionEn: sanitizeOptionalHtml(input.contributionEn),
-        outcome: sanitizeOptionalHtml(input.outcome),
-        outcomeEn: sanitizeOptionalHtml(input.outcomeEn),
-        image: input.image,
-        role: input.role,
-        liveUrl: input.liveUrl,
-        githubUrl: input.githubUrl,
-        displayOrder: nextDisplayOrder,
-        isPublished: input.isPublished,
-        publishedAt: input.publishedAt,
-        stacks: input.stacks,
-        createdBy: 0,
-        updatedBy: 0,
-      });
+  async importPortfolios(input: {
+    portfolios: PortfolioCreateServiceInput[];
+  }): Promise<Portfolio[]> {
+    try {
+      const maxDisplayOrder = await this.portfolioRepository.getMaxDisplayOrder();
+      const createdPortfolios: Portfolio[] = [];
+
+      for (const [index, portfolio] of input.portfolios.entries()) {
+        const createdPortfolio = await this.createPortfolioRecord(
+          portfolio,
+          maxDisplayOrder + index + 1,
+        );
+        createdPortfolios.push(createdPortfolio);
+      }
+
+      return createdPortfolios;
     } catch (error) {
       throwPortfolioDomainErrorIfPrismaError(error);
       throw error;

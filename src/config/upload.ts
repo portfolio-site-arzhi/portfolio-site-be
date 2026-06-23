@@ -40,6 +40,12 @@ export const EXPERIENCE_IMPORT_UPLOAD_VALIDATION_MESSAGES = {
   invalidUpload: "Upload file import experience tidak valid",
 };
 
+export const PORTFOLIO_IMPORT_UPLOAD_VALIDATION_MESSAGES = {
+  limitFileSize: `Ukuran file JSON maksimal ${MAX_JSON_UPLOAD_SIZE_MB}MB`,
+  limitUnexpectedFile: "Field file import portfolio tidak valid",
+  invalidUpload: "Upload file import portfolio tidak valid",
+};
+
 const fileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
   if (!allowedImageMimes.includes(file.mimetype)) {
     (req as UploadRequest).fileValidationError =
@@ -159,6 +165,12 @@ export const createSkillImportUploadMiddleware = () =>
   });
 
 export const createExperienceImportUploadMiddleware = () =>
+  createJsonImportUploadMiddleware();
+
+export const createPortfolioImportUploadMiddleware = () =>
+  createJsonImportUploadMiddleware();
+
+const createJsonImportUploadMiddleware = () =>
   multer({
     storage: multer.memoryStorage(),
     fileFilter: jsonFileFilter,

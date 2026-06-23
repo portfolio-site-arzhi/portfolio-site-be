@@ -4,7 +4,14 @@ import path from "path";
 import { ZodError } from "zod";
 import { logger } from "../config";
 import { getPortfolioSuccessMessage } from "../i18n/portfolioSuccessMessages";
-import type { PortfolioSuccessMessageKey } from "../model";
+import type {
+  PortfolioCreatePayloadInput,
+  PortfolioCreateServiceInput,
+  PortfolioSuccessMessageKey,
+} from "../model";
+import {
+  sendAttachmentBuffer,
+} from "../helper/attachmentResponse";
 import {
   handleDomainError,
   handleJsonSyntaxError,
@@ -13,12 +20,16 @@ import {
 } from "../helper/errorHandler";
 import { withBaseUrl } from "../helper/publicUrl";
 import { resolveResponseLocale } from "../helper/responseLocale";
+import { PortfolioImportSampleService } from "../services/portfolioImportSampleService";
+import { PortfolioImportService } from "../services/portfolioImportService";
 import { PortfolioService } from "../services/portfolioService";
 import {
   validateCreatePortfolio,
   validateCreatePortfolioFileUpload,
+  validateImportPortfolio,
   validateListPortfoliosQuery,
   validatePortfolioIdParam,
+  validatePortfolioImportFileUpload,
   validateUpdatePortfolio,
   validateUpdatePortfolioFileUpload,
   validateUpdatePortfolioSort,
@@ -71,6 +82,29 @@ const getLocalizedPortfolioSuccessMessage = (
   return getPortfolioSuccessMessage(locale, key);
 };
 
+const mapPortfolioInputToService = (
+  input: PortfolioCreatePayloadInput,
+  image: string | null,
+): PortfolioCreateServiceInput => ({
+  title: input.title,
+  description: input.description,
+  descriptionEn: input.description_en ?? null,
+  contribution: input.contribution ?? null,
+  contributionEn: input.contribution_en ?? null,
+  outcome: input.outcome ?? null,
+  outcomeEn: input.outcome_en ?? null,
+  image,
+  role: input.role ?? null,
+  liveUrl: input.live_url ?? null,
+  githubUrl: input.github_url ?? null,
+  isPublished: input.is_published,
+  publishedAt:
+    typeof input.published_at === "string" ? parseDatetime(input.published_at) : null,
+  stacks: input.stacks.map((stack) => ({
+    name: stack.name,
+  })),
+});
+
 const mapPortfolioResponse = (portfolio: Awaited<ReturnType<PortfolioService["getPortfolioById"]>>) => ({
   id: portfolio.id,
   slug: portfolio.slug,
@@ -101,7 +135,11 @@ const mapPortfolioResponse = (portfolio: Awaited<ReturnType<PortfolioService["ge
 });
 
 export class PortfolioController {
-  constructor(private readonly portfolioService: PortfolioService) {}
+  constructor(
+    private readonly portfolioService: PortfolioService,
+    private readonly portfolioImportService: PortfolioImportService,
+    private readonly portfolioImportSampleService: PortfolioImportSampleService,
+  ) {}
 
   list = async (req: Request, res: Response) => {
     try {
@@ -167,28 +205,14 @@ export class PortfolioController {
       });
 
       const input = validateCreatePortfolio(getMultipartPayload(req.body));
-      const portfolio = await this.portfolioService.createPortfolio({
-        title: input.title,
-        description: input.description,
-        descriptionEn: input.description_en ?? null,
-        contribution: input.contribution ?? null,
-        contributionEn: input.contribution_en ?? null,
-        outcome: input.outcome ?? null,
-        outcomeEn: input.outcome_en ?? null,
-        image:
+      const portfolio = await this.portfolioService.createPortfolio(
+        mapPortfolioInputToService(
+          input,
           typeof validatedImageFilename === "string"
             ? getPortfolioImagePath(validatedImageFilename)
             : null,
-        role: input.role ?? null,
-        liveUrl: input.live_url ?? null,
-        githubUrl: input.github_url ?? null,
-        isPublished: input.is_published,
-        publishedAt:
-          typeof input.published_at === "string" ? parseDatetime(input.published_at) : null,
-        stacks: input.stacks.map((stack) => ({
-          name: stack.name,
-        })),
-      });
+        ),
+      );
 
       res.status(201).json({
         message: getLocalizedPortfolioSuccessMessage(req, "PORTFOLIO_CREATED_SUCCESS"),
@@ -219,6 +243,80 @@ export class PortfolioController {
       }
 
       handleUnexpectedError(res, error, logger, "Create portfolio error");
+    }
+  };
+
+  import = async (req: Request, res: Response) => {
+    try {
+      const fileValidationError =
+        (req as Request & { fileValidationError?: string }).fileValidationError ??
+        undefined;
+      const uploadedFile = req.file;
+      validatePortfolioImportFileUpload({
+        ...(typeof fileValidationError === "string" ? { fileValidationError } : {}),
+        hasFile: Boolean(uploadedFile),
+      });
+
+      if (!uploadedFile) {
+        return;
+      }
+
+      const rows = this.portfolioImportService.parseImportFile({
+        buffer: uploadedFile.buffer,
+        originalname: uploadedFile.originalname,
+      });
+      const input = validateImportPortfolio(rows);
+      const portfolios = await this.portfolioService.importPortfolios({
+        portfolios: input.portfolios.map((portfolio) =>
+          mapPortfolioInputToService(portfolio, null),
+        ),
+      });
+
+      res.status(200).json({
+        message: getLocalizedPortfolioSuccessMessage(req, "PORTFOLIO_IMPORTED_SUCCESS"),
+        data: portfolios.map((portfolio) => mapPortfolioResponse(portfolio)),
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        handleZodError(res, error);
+        return;
+      }
+
+      if (
+        error instanceof Error &&
+        handleDomainError(res, error, {
+          PORTFOLIO_IMPORT_INVALID_FILE: {
+            status: 400,
+            messages: ["File import portfolio tidak valid"],
+          },
+          PORTFOLIO_IMPORT_INVALID_JSON_FILE: {
+            status: 400,
+            messages: ["File JSON portfolio tidak valid"],
+          },
+          PORTFOLIO_SLUG_ALREADY_EXISTS: {
+            status: 400,
+            messages: ["Slug portfolio sudah digunakan"],
+          },
+        })
+      ) {
+        return;
+      }
+
+      handleUnexpectedError(res, error, logger, "Import portfolio error");
+    }
+  };
+
+  sampleImport = async (_req: Request, res: Response) => {
+    try {
+      const file = this.portfolioImportSampleService.createSampleFile();
+      sendAttachmentBuffer(res, file);
+    } catch (error) {
+      handleUnexpectedError(
+        res,
+        error,
+        logger,
+        "Download portfolio import sample error",
+      );
     }
   };
 

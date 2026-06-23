@@ -8,9 +8,12 @@ Catatan penting:
 - Resource utama disimpan di table `portfolios`.
 - Data child disimpan terpisah hanya untuk table `portfolio_stacks`.
 - Create dan update portfolio menggunakan `multipart/form-data`.
+- Endpoint `POST /portfolios/import` menerima upload file JSON dan hanya menambahkan data portfolio baru.
+- Endpoint `GET /portfolios/import/sample` mengembalikan file JSON template untuk import.
 - Field file gambar adalah `image`; backend menyimpan path upload ke field DB `image`.
 - Data non-file dikirim sebagai field multipart `payload` berisi JSON string.
 - Field `image` bersifat optional saat create. Cocok untuk portfolio/service project yang tidak punya screenshot.
+- Import JSON tidak menerima upload gambar; semua data hasil import akan disimpan dengan `image = null`.
 - Field `slug` tidak dikirim dari frontend. Backend membuat slug otomatis dari `title`, misalnya `Ecommerce Dashboard` menjadi `ecommerce-dashboard`.
 - Jika hasil slug dari `title` sudah dipakai portfolio lain, backend menambahkan suffix angka seperti `ecommerce-dashboard-2`.
 - Upload gambar mengikuti aturan upload project: JPG/JPEG, PNG, atau WebP.
@@ -180,6 +183,84 @@ curl -X PUT "http://localhost:9000/portfolios/1" \
   -F 'payload={
     "status_file": 1
   }'
+```
+
+Sample file import portfolio (CMS)
+----------------------------------
+
+- Endpoint: `GET http://localhost:9000/portfolios/import/sample`
+
+Catatan:
+
+- Response berupa file JSON download dengan `Content-Type: application/json`.
+- Backend mengirim header `Content-Disposition: attachment`.
+- Filename default adalah `portfolios-import-sample.json`.
+- Struktur root file menggunakan object dengan key `portfolios`.
+- Field `image` tidak ada di file sample karena import JSON tidak menangani upload gambar.
+
+Contoh cURL:
+
+```bash
+curl -X GET "http://localhost:9000/portfolios/import/sample" \
+  -H "Accept: application/json" \
+  --output portfolios-import-sample.json
+```
+
+Contoh isi file:
+
+```json
+{
+  "portfolios": [
+    {
+      "title": "Ecommerce Dashboard",
+      "description": "Dashboard analytics untuk toko online",
+      "description_en": "Analytics dashboard for ecommerce store",
+      "contribution": "<p>Membangun dashboard analytics</p>",
+      "contribution_en": "<p>Built analytics dashboard</p>",
+      "outcome": "<p>Meningkatkan conversion rate</p>",
+      "outcome_en": "<p>Improved conversion rate</p>",
+      "role": "Frontend Lead",
+      "live_url": "https://demo.example.com/ecommerce-dashboard",
+      "github_url": "https://github.com/example/ecommerce-dashboard",
+      "is_published": true,
+      "published_at": "2026-04-24T09:00:00.000Z",
+      "stacks": [
+        { "name": "Vue 3" },
+        { "name": "PostgreSQL" }
+      ]
+    }
+  ]
+}
+```
+
+Import portfolios dari file JSON (CMS)
+--------------------------------------
+
+- Endpoint: `POST http://localhost:9000/portfolios/import`
+- Content-Type: `multipart/form-data`
+
+Catatan:
+
+- Endpoint ini hanya menambahkan (`insert`) portfolio baru.
+- Data portfolio yang sudah ada tidak akan diubah atau dihapus.
+- Field upload yang digunakan adalah `file`.
+- File harus berformat `.json`.
+- Struktur JSON harus memakai root object `portfolios`.
+- Setiap item di dalam `portfolios` mengikuti format field yang sama seperti endpoint create portfolio, kecuali `image`.
+- Semua data hasil import otomatis disimpan dengan `image = null`.
+- `slug` tetap dibuat otomatis dari `title` dan akan dijaga tetap unik.
+- `contribution`, `contribution_en`, `outcome`, dan `outcome_en` akan tetap disanitasi sebelum disimpan.
+- Urutan array `portfolios` pada file akan menjadi `display_order` data baru setelah data existing.
+- Urutan array `stacks` pada setiap portfolio akan menjadi `display_order` child (1..n).
+- `published_at` menggunakan format datetime ISO 8601 atau `null`.
+
+Contoh cURL:
+
+```bash
+curl -X POST "http://localhost:9000/portfolios/import" \
+  -H "Accept: application/json" \
+  -H "Accept-Language: id" \
+  -F "file=@portfolios-import.json;type=application/json"
 ```
 
 Delete portfolio (CMS)

@@ -1,3 +1,5 @@
+import type { JsonImportUploadFile } from "./jsonImport";
+
 export interface ExperienceImportSkillItem {
   skill_name: string;
 }
@@ -20,10 +22,7 @@ export interface ExperienceImportPayload {
   experiences: ExperienceImportItem[];
 }
 
-export interface ExperienceImportUploadFile {
-  buffer: Buffer;
-  originalname: string;
-}
+export interface ExperienceImportUploadFile extends JsonImportUploadFile {}
 
 export interface ExperienceImportSampleFile {
   filename: string;
