@@ -20,6 +20,10 @@ const EXPERIENCE_SUCCESS_MESSAGES: Record<
     id: "Urutan experience berhasil diperbarui",
     en: "Experience sort order updated successfully",
   },
+  EXPERIENCE_IMPORTED_SUCCESS: {
+    id: "Experience berhasil diimport",
+    en: "Experience imported successfully",
+  },
 };
 
 export const getExperienceSuccessMessage = (

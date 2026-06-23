@@ -46,6 +46,34 @@ export const updateExperienceSchema = experienceBaseSchema
     }
   });
 
+export const importExperienceSchema = z.object({
+  experiences: z.array(createExperienceSchema).min(1, "Daftar experiences tidak boleh kosong"),
+});
+
+const experienceImportFileUploadSchema = z
+  .object({
+    fileValidationError: z.string().optional(),
+    hasFile: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    if (typeof data.fileValidationError === "string" && data.fileValidationError) {
+      ctx.addIssue({
+        code: "custom",
+        message: data.fileValidationError,
+        path: ["file"],
+      });
+      return;
+    }
+
+    if (!data.hasFile) {
+      ctx.addIssue({
+        code: "custom",
+        message: "File JSON wajib diupload",
+        path: ["file"],
+      });
+    }
+  });
+
 export const listExperiencesQuerySchema = z.object({
   search: z.string().min(1).optional(),
 });
@@ -73,6 +101,7 @@ export const landingExperiencesQuerySchema = z.object({});
 
 export type CreateExperienceInputHttp = z.infer<typeof createExperienceSchema>;
 export type UpdateExperienceInputHttp = z.infer<typeof updateExperienceSchema>;
+export type ImportExperienceInputHttp = z.infer<typeof importExperienceSchema>;
 export type ListExperiencesQueryInputHttp = z.infer<typeof listExperiencesQuerySchema>;
 export type UpdateExperienceSortInputHttp = z.infer<typeof updateExperienceSortSchema>;
 export type LandingExperiencesQueryInputHttp = z.infer<typeof landingExperiencesQuerySchema>;
@@ -82,6 +111,13 @@ export const validateCreateExperience = (data: unknown): CreateExperienceInputHt
 
 export const validateUpdateExperience = (data: unknown): UpdateExperienceInputHttp =>
   updateExperienceSchema.parse(data);
+
+export const validateImportExperience = (data: unknown): ImportExperienceInputHttp =>
+  importExperienceSchema.parse(data);
+
+export const validateExperienceImportFileUpload = (data: unknown): void => {
+  experienceImportFileUploadSchema.parse(data);
+};
 
 export const validateListExperiencesQuery = (
   query: unknown,

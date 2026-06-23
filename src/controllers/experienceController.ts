@@ -3,25 +3,43 @@ import { ZodError } from "zod";
 import { logger } from "../config";
 import { getExperienceSuccessMessage } from "../i18n/experienceSuccessMessages";
 import type { ExperienceSuccessMessageKey } from "../model";
+import { sendAttachmentBuffer } from "../helper/attachmentResponse";
+import { toExperienceResponse } from "../helper/experienceResponse";
 import {
   handleDomainError,
   handleUnexpectedError,
   handleZodError,
 } from "../helper/errorHandler";
 import { resolveResponseLocale } from "../helper/responseLocale";
+import { ExperienceImportSampleService } from "../services/experienceImportSampleService";
+import { ExperienceImportService } from "../services/experienceImportService";
 import { ExperienceService } from "../services/experienceService";
 import {
+  type CreateExperienceInputHttp,
   validateCreateExperience,
   validateExperienceIdParam,
+  validateExperienceImportFileUpload,
+  validateImportExperience,
   validateListExperiencesQuery,
   validateUpdateExperience,
   validateUpdateExperienceSort,
 } from "../validation/experienceValidation";
 
-const formatDateOnly = (value: Date | null): string | null =>
-  value ? value.toISOString().slice(0, 10) : null;
-
 const parseMonthDate = (value: string): Date => new Date(`${value}T00:00:00.000Z`);
+
+const mapExperienceInputToService = (input: CreateExperienceInputHttp) => ({
+  isPublished: input.is_published,
+  roleId: input.role_id,
+  roleEn: input.role_en,
+  companyName: input.company_name,
+  companyUrl: input.company_url ?? null,
+  startDate: typeof input.start_date === "string" ? parseMonthDate(input.start_date) : null,
+  endDate: typeof input.end_date === "string" ? parseMonthDate(input.end_date) : null,
+  isCurrent: input.is_current,
+  descriptionId: input.description_id,
+  descriptionEn: input.description_en,
+  skills: input.skills.map((skill) => ({ skillName: skill.skill_name })),
+});
 
 const getLocalizedExperienceSuccessMessage = (
   req: Request,
@@ -32,7 +50,11 @@ const getLocalizedExperienceSuccessMessage = (
 };
 
 export class ExperienceController {
-  constructor(private readonly experienceService: ExperienceService) {}
+  constructor(
+    private readonly experienceService: ExperienceService,
+    private readonly experienceImportService: ExperienceImportService,
+    private readonly experienceImportSampleService: ExperienceImportSampleService,
+  ) {}
 
   list = async (req: Request, res: Response) => {
     try {
@@ -42,27 +64,7 @@ export class ExperienceController {
       });
 
       res.status(200).json({
-        data: experiences.map((experience) => ({
-          id: experience.id,
-          sort: experience.sort,
-          is_published: experience.is_published,
-          role_id: experience.role_id,
-          role_en: experience.role_en,
-          company_name: experience.company_name,
-          company_url: experience.company_url,
-          start_date: formatDateOnly(experience.start_date),
-          end_date: formatDateOnly(experience.end_date),
-          is_current: experience.is_current,
-          description_id: experience.description_id,
-          description_en: experience.description_en,
-          skills: experience.skills.map((skill) => ({
-            id: skill.id,
-            skill_name: skill.skill_name,
-            sort: skill.sort,
-          })),
-          created_at: experience.created_at,
-          updated_at: experience.updated_at,
-        })),
+        data: experiences.map(toExperienceResponse),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -80,27 +82,7 @@ export class ExperienceController {
       const experience = await this.experienceService.getExperienceById(id);
 
       res.status(200).json({
-        data: {
-          id: experience.id,
-          sort: experience.sort,
-          is_published: experience.is_published,
-          role_id: experience.role_id,
-          role_en: experience.role_en,
-          company_name: experience.company_name,
-          company_url: experience.company_url,
-          start_date: formatDateOnly(experience.start_date),
-          end_date: formatDateOnly(experience.end_date),
-          is_current: experience.is_current,
-          description_id: experience.description_id,
-          description_en: experience.description_en,
-          skills: experience.skills.map((skill) => ({
-            id: skill.id,
-            skill_name: skill.skill_name,
-            sort: skill.sort,
-          })),
-          created_at: experience.created_at,
-          updated_at: experience.updated_at,
-        },
+        data: toExperienceResponse(experience),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -127,43 +109,13 @@ export class ExperienceController {
   create = async (req: Request, res: Response) => {
     try {
       const input = validateCreateExperience(req.body);
-      const experience = await this.experienceService.createExperience({
-        isPublished: input.is_published,
-        roleId: input.role_id,
-        roleEn: input.role_en,
-        companyName: input.company_name,
-        companyUrl: input.company_url ?? null,
-        startDate: typeof input.start_date === "string" ? parseMonthDate(input.start_date) : null,
-        endDate: typeof input.end_date === "string" ? parseMonthDate(input.end_date) : null,
-        isCurrent: input.is_current,
-        descriptionId: input.description_id,
-        descriptionEn: input.description_en,
-        skills: input.skills.map((skill) => ({ skillName: skill.skill_name })),
-      });
+      const experience = await this.experienceService.createExperience(
+        mapExperienceInputToService(input),
+      );
 
       res.status(201).json({
         message: getLocalizedExperienceSuccessMessage(req, "EXPERIENCE_CREATED_SUCCESS"),
-        data: {
-          id: experience.id,
-          sort: experience.sort,
-          is_published: experience.is_published,
-          role_id: experience.role_id,
-          role_en: experience.role_en,
-          company_name: experience.company_name,
-          company_url: experience.company_url,
-          start_date: formatDateOnly(experience.start_date),
-          end_date: formatDateOnly(experience.end_date),
-          is_current: experience.is_current,
-          description_id: experience.description_id,
-          description_en: experience.description_en,
-          skills: experience.skills.map((skill) => ({
-            id: skill.id,
-            skill_name: skill.skill_name,
-            sort: skill.sort,
-          })),
-          created_at: experience.created_at,
-          updated_at: experience.updated_at,
-        },
+        data: toExperienceResponse(experience),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -201,27 +153,7 @@ export class ExperienceController {
 
       res.status(200).json({
         message: getLocalizedExperienceSuccessMessage(req, "EXPERIENCE_UPDATED_SUCCESS"),
-        data: {
-          id: experience.id,
-          sort: experience.sort,
-          is_published: experience.is_published,
-          role_id: experience.role_id,
-          role_en: experience.role_en,
-          company_name: experience.company_name,
-          company_url: experience.company_url,
-          start_date: formatDateOnly(experience.start_date),
-          end_date: formatDateOnly(experience.end_date),
-          is_current: experience.is_current,
-          description_id: experience.description_id,
-          description_en: experience.description_en,
-          skills: experience.skills.map((skill) => ({
-            id: skill.id,
-            skill_name: skill.skill_name,
-            sort: skill.sort,
-          })),
-          created_at: experience.created_at,
-          updated_at: experience.updated_at,
-        },
+        data: toExperienceResponse(experience),
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -242,6 +174,74 @@ export class ExperienceController {
       }
 
       handleUnexpectedError(res, error, logger, "Update experience error");
+    }
+  };
+
+  import = async (req: Request, res: Response) => {
+    try {
+      const fileValidationError =
+        (req as Request & { fileValidationError?: string }).fileValidationError ??
+        undefined;
+      const uploadedFile = req.file;
+      validateExperienceImportFileUpload({
+        ...(typeof fileValidationError === "string" ? { fileValidationError } : {}),
+        hasFile: Boolean(uploadedFile),
+      });
+
+      if (!uploadedFile) {
+        return;
+      }
+
+      const rows = this.experienceImportService.parseImportFile({
+        buffer: uploadedFile.buffer,
+        originalname: uploadedFile.originalname,
+      });
+      const input = validateImportExperience(rows);
+      const experiences = await this.experienceService.importExperiences({
+        experiences: input.experiences.map(mapExperienceInputToService),
+      });
+
+      res.status(200).json({
+        message: getLocalizedExperienceSuccessMessage(req, "EXPERIENCE_IMPORTED_SUCCESS"),
+        data: experiences.map(toExperienceResponse),
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        handleZodError(res, error);
+        return;
+      }
+
+      if (
+        error instanceof Error &&
+        handleDomainError(res, error, {
+          EXPERIENCE_IMPORT_INVALID_FILE: {
+            status: 400,
+            messages: ["File import experience tidak valid"],
+          },
+          EXPERIENCE_IMPORT_INVALID_JSON_FILE: {
+            status: 400,
+            messages: ["File JSON experience tidak valid"],
+          },
+        })
+      ) {
+        return;
+      }
+
+      handleUnexpectedError(res, error, logger, "Import experience error");
+    }
+  };
+
+  sampleImport = async (_req: Request, res: Response) => {
+    try {
+      const file = this.experienceImportSampleService.createSampleFile();
+      sendAttachmentBuffer(res, file);
+    } catch (error) {
+      handleUnexpectedError(
+        res,
+        error,
+        logger,
+        "Download experience import sample error",
+      );
     }
   };
 

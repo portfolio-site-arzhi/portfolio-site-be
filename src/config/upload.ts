@@ -9,10 +9,18 @@ const allowedExcelMimes = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/octet-stream",
 ];
+const allowedJsonMimes = [
+  "application/json",
+  "text/json",
+  "text/plain",
+  "application/octet-stream",
+];
 const MAX_IMAGE_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_UPLOAD_SIZE_MB = MAX_IMAGE_UPLOAD_SIZE_BYTES / (1024 * 1024);
 const MAX_EXCEL_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_EXCEL_UPLOAD_SIZE_MB = MAX_EXCEL_UPLOAD_SIZE_BYTES / (1024 * 1024);
+const MAX_JSON_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_JSON_UPLOAD_SIZE_MB = MAX_JSON_UPLOAD_SIZE_BYTES / (1024 * 1024);
 
 const IMAGE_UPLOAD_VALIDATION_MESSAGES = {
   limitFileSize: `Ukuran file gambar maksimal ${MAX_IMAGE_UPLOAD_SIZE_MB}MB`,
@@ -24,6 +32,12 @@ export const SKILL_IMPORT_UPLOAD_VALIDATION_MESSAGES = {
   limitFileSize: `Ukuran file Excel maksimal ${MAX_EXCEL_UPLOAD_SIZE_MB}MB`,
   limitUnexpectedFile: "Field file Excel tidak valid",
   invalidUpload: "Upload file Excel tidak valid",
+};
+
+export const EXPERIENCE_IMPORT_UPLOAD_VALIDATION_MESSAGES = {
+  limitFileSize: `Ukuran file JSON maksimal ${MAX_JSON_UPLOAD_SIZE_MB}MB`,
+  limitUnexpectedFile: "Field file import experience tidak valid",
+  invalidUpload: "Upload file import experience tidak valid",
 };
 
 const fileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
@@ -44,6 +58,20 @@ const excelFileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
   if (extension !== ".xlsx" || !isAllowedMime) {
     (req as UploadRequest).fileValidationError =
       "Tipe file Excel tidak didukung. Gunakan file .xlsx";
+    cb(null, false);
+    return;
+  }
+
+  cb(null, true);
+};
+
+const jsonFileFilter: multer.Options["fileFilter"] = (req, file, cb) => {
+  const extension = path.extname(file.originalname).toLowerCase();
+  const isAllowedMime = allowedJsonMimes.includes(file.mimetype);
+
+  if (extension !== ".json" || !isAllowedMime) {
+    (req as UploadRequest).fileValidationError =
+      "Tipe file JSON tidak didukung. Gunakan file .json";
     cb(null, false);
     return;
   }
@@ -127,5 +155,14 @@ export const createSkillImportUploadMiddleware = () =>
     fileFilter: excelFileFilter,
     limits: {
       fileSize: MAX_EXCEL_UPLOAD_SIZE_BYTES,
+    },
+  });
+
+export const createExperienceImportUploadMiddleware = () =>
+  multer({
+    storage: multer.memoryStorage(),
+    fileFilter: jsonFileFilter,
+    limits: {
+      fileSize: MAX_JSON_UPLOAD_SIZE_BYTES,
     },
   });

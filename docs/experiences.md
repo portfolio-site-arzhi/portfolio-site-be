@@ -7,6 +7,8 @@ Catatan penting:
 
 - `description_id` dan `description_en` menyimpan HTML dari input WYSIWYG.
 - Backend melakukan sanitasi HTML (menghapus script/event handler) sebelum disimpan.
+- Endpoint `POST /experiences/import` menerima upload file JSON dan hanya menambahkan data experience baru.
+- Endpoint `GET /experiences/import/sample` mengembalikan file JSON template untuk import.
 - Sorting di CMS menggunakan vuedraggable: backend menyediakan endpoint update sort berdasarkan urutan `ids` array.
 - `start_date` dan `end_date` menggunakan format `YYYY-MM-01` (day selalu `01` untuk representasi bulan).
 - Untuk endpoint non-GET (`POST`, `PUT`, `PATCH`, `DELETE`) backend mengembalikan field `message` yang mendukung `Accept-Language` (`id` / `en`). Jika header tidak dikirim atau tidak didukung, default ke `id`.
@@ -154,6 +156,79 @@ curl -X PUT "http://localhost:9000/experiences/1" \
       { "skill_name": "TypeScript" }
     ]
   }'
+```
+
+Sample file import experience (CMS)
+----------------------------------
+
+- Endpoint: `GET http://localhost:9000/experiences/import/sample`
+
+Catatan:
+
+- Response berupa file JSON download dengan `Content-Type: application/json`.
+- Backend mengirim header `Content-Disposition: attachment`.
+- Filename default adalah `experiences-import-sample.json`.
+- Struktur root file menggunakan object dengan key `experiences`.
+
+Contoh cURL:
+
+```bash
+curl -X GET "http://localhost:9000/experiences/import/sample" \
+  -H "Accept: application/json" \
+  --output experiences-import-sample.json
+```
+
+Contoh isi file:
+
+```json
+{
+  "experiences": [
+    {
+      "is_published": true,
+      "role_id": "Senior Frontend Developer",
+      "role_en": "Senior Frontend Developer",
+      "company_name": "Tech Solutions Inc.",
+      "company_url": "https://example.com",
+      "start_date": "2023-07-01",
+      "end_date": null,
+      "is_current": true,
+      "description_id": "<p>Memimpin migrasi frontend...</p>",
+      "description_en": "<p>Led the frontend migration...</p>",
+      "skills": [
+        { "skill_name": "TypeScript" },
+        { "skill_name": "Vue.js" }
+      ]
+    }
+  ]
+}
+```
+
+Import experiences dari file JSON (CMS)
+--------------------------------------
+
+- Endpoint: `POST http://localhost:9000/experiences/import`
+- Content-Type: `multipart/form-data`
+
+Catatan:
+
+- Endpoint ini hanya menambahkan (`insert`) experience baru.
+- Data experience yang sudah ada tidak akan diubah atau dihapus.
+- Field upload yang digunakan adalah `file`.
+- File harus berformat `.json`.
+- Struktur JSON harus memakai root object `experiences`.
+- Setiap item di dalam `experiences` mengikuti format field yang sama seperti endpoint create experience.
+- `description_id` dan `description_en` akan tetap disanitasi sebelum disimpan.
+- Urutan array `experiences` pada file akan menjadi `sort` data baru setelah data existing.
+- Urutan array `skills` pada setiap experience akan menjadi `sort` skill (1..n).
+- Jika `is_current = true`, maka `end_date` wajib `null`.
+
+Contoh cURL:
+
+```bash
+curl -X POST "http://localhost:9000/experiences/import" \
+  -H "Accept: application/json" \
+  -H "Accept-Language: id" \
+  -F "file=@experiences-import.json;type=application/json"
 ```
 
 Delete experience (CMS)
