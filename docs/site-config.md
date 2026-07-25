@@ -58,7 +58,8 @@ Contoh response lengkap ketika semua konfigurasi sudah diisi:
         "en": "I am a software engineer focusing on web development."
       },
       "email": "id@example.com",
-      "address": "Jakarta, Indonesia"
+      "address": "Jakarta, Indonesia",
+      "whatsapp": "8121234567"
     },
     "footer": {
       "github": "https://github.com/username",
@@ -139,7 +140,8 @@ Catatan:
         "en": "I am a software engineer focusing on web development."
       },
       "email": "id@example.com",
-      "address": "Jakarta, Indonesia"
+      "address": "Jakarta, Indonesia",
+      "whatsapp": "8121234567"
     }
   },
   "footer": {
@@ -181,7 +183,8 @@ curl -X POST "http://localhost:9000/site-configs/bulk" \
           "en": "I am a software engineer focusing on web development."
         },
         "email": "id@example.com",
-        "address": "Jakarta, Indonesia"
+        "address": "Jakarta, Indonesia",
+        "whatsapp": "8121234567"
       }
     },
     "footer": {
@@ -222,8 +225,8 @@ Berikut adalah tipe konfigurasi yang tersedia:
   - Fields: `name`, `position`, `description`, `photo`
   - Catatan: Multi-language **hanya** pada teks `description` (punya versi `id` dan `en`). Field lain (`name`, `position`, `photo`) dianggap single value dan digunakan untuk kedua bahasa.
 - **about**: Konfigurasi halaman about
-  - Fields: `about_me`, `email`, `address`
-  - Catatan: Multi-language **hanya** pada teks `about_me` (punya versi `id` dan `en`). Field `email` dan `address` adalah single value.
+  - Fields: `about_me`, `email`, `address`, `whatsapp` (optional)
+  - Catatan: Multi-language **hanya** pada teks `about_me` (punya versi `id` dan `en`). Field `email`, `address`, dan `whatsapp` adalah single value.
 - **footer**: Konfigurasi footer
   - Fields: `github`, `linkedin`, `instagram`
   - Catatan: Tidak ada field multi-language di payload; semua link dianggap single value dan dipakai untuk semua bahasa.
@@ -245,7 +248,8 @@ Contoh value untuk setiap type:
   "about": {
     "about_me": "Tentang saya...",
     "email": "email@example.com",
-    "address": "Jakarta, Indonesia"
+    "address": "Jakarta, Indonesia",
+    "whatsapp": "8121234567"
   },
   "footer": {
     "github": "https://github.com/username",

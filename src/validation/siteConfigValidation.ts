@@ -24,6 +24,14 @@ const aboutValueSchema = z.object({
     (value) => value ?? "",
     z.string().min(1, "Address is required"),
   ),
+  whatsapp: z
+    .string()
+    .trim()
+    .regex(
+      /^8[0-9]{8,11}$/,
+      "WhatsApp harus diawali 8, terdiri dari 9-12 digit, tanpa awalan 0, 62, atau +62",
+    )
+    .optional(),
 });
 
 const footerValueSchema = z.object({

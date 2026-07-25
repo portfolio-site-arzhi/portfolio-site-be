@@ -4,6 +4,7 @@ import { ISiteConfigRepository } from "../repository/contracts/ISiteConfigReposi
 import {
   SiteConfigData,
   HomeConfigValue,
+  AboutConfigValue,
   CreateSiteConfigInput as CreateSiteConfigModelInput,
 } from "../model/siteConfig";
 import type { BulkSiteConfigInput } from "../validation/siteConfigValidation";
@@ -79,6 +80,9 @@ export class SiteConfigService {
     const existingHomeEn = existingConfigs.find(
       (c) => c.type === "home" && c.locale === "en",
     );
+    const existingAboutBase = existingConfigs.find(
+      (c) => c.type === "about" && c.locale === null,
+    );
     const existingHomeBaseValue = existingHomeBase
       ? (existingHomeBase.value as HomeConfigValue)
       : null;
@@ -87,6 +91,9 @@ export class SiteConfigService {
       : null;
     const existingHomeEnValue = existingHomeEn
       ? (existingHomeEn.value as HomeConfigValue)
+      : null;
+    const existingAboutBaseValue = existingAboutBase
+      ? (existingAboutBase.value as AboutConfigValue)
       : null;
     const existingPhoto =
       existingHomeBaseValue?.photo ??
@@ -199,14 +206,20 @@ export class SiteConfigService {
 
     if (input.about?.value) {
       const aboutValue = input.about.value;
+      const whatsapp = aboutValue.whatsapp ?? existingAboutBaseValue?.whatsapp;
+      const aboutConfigValue: Record<string, string> = {
+        email: aboutValue.email,
+        address: aboutValue.address,
+      };
+
+      if (whatsapp !== undefined) {
+        aboutConfigValue.whatsapp = whatsapp;
+      }
 
       await this.siteConfigRepository.create({
         type: "about",
         locale: undefined,
-        value: {
-          email: aboutValue.email,
-          address: aboutValue.address,
-        },
+        value: aboutConfigValue,
         createdBy: 0,
         updatedBy: 0,
       });

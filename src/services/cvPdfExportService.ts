@@ -40,6 +40,15 @@ const formatDateRange = (params: {
 const joinNonEmpty = (values: Array<string | null | undefined>): string =>
   values.map((value) => value?.trim()).filter(Boolean).join(" | ");
 
+const formatWhatsappForPdf = (whatsapp: string): string => {
+  const localNumber = whatsapp
+    .trim()
+    .replace(/^\+?62/, "")
+    .replace(/^0/, "");
+
+  return `+62${localNumber}`;
+};
+
 const buildSummaryParagraphs = (
   locale: ResponseLocale,
   params: {
@@ -161,6 +170,9 @@ export class CvPdfExportService {
           siteConfig.home?.position ?? null,
           siteConfig.about?.email ?? null,
           siteConfig.about?.address ?? null,
+          siteConfig.about?.whatsapp
+            ? `WhatsApp: ${formatWhatsappForPdf(siteConfig.about.whatsapp)}`
+            : null,
         ]);
         const socialLinks = joinNonEmpty([
           landingPageUrl ? `Website: ${landingPageUrl}` : null,

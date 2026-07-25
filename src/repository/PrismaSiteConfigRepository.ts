@@ -255,6 +255,11 @@ export class PrismaSiteConfigRepository implements ISiteConfigRepository {
             },
             email: aboutBaseValue?.email ?? "",
             address: aboutBaseValue?.address ?? "",
+            ...(aboutBaseValue?.whatsapp
+              ? {
+                  whatsapp: aboutBaseValue.whatsapp,
+                }
+              : {}),
           }
         : null;
 
