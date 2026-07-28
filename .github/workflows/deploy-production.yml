@@ -226,7 +226,7 @@ jobs:
             exit 1
           fi
 
-          if ! "${migration_compose[@]}" run --rm --no-deps "$MIGRATOR_SERVICE"; then
+          if ! "${migration_compose[@]}" run --rm --no-deps -T "$MIGRATOR_SERVICE" </dev/null; then
             echo "Migration failed; the runtime backend was not changed."
             restore_env
             exit 1
