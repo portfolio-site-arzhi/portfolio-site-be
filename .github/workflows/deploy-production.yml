@@ -116,7 +116,14 @@ jobs:
             -o UserKnownHostsFile="$ssh_dir/known_hosts"
           )
 
-          scp "${ssh_options[@]}" \
+          scp_options=(
+            -P "$SSH_PORT"
+            -i "$ssh_dir/deploy_key"
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$ssh_dir/known_hosts"
+          )
+
+          scp "${scp_options[@]}" \
             docker-compose.yml docker-compose.prod.yml \
             "$SSH_USER@$SSH_HOST:$APP_DIR/"
 
