@@ -203,7 +203,7 @@ jobs:
             fi
 
             "${runtime_compose[@]}" pull "$RUNTIME_SERVICE"
-            "${runtime_compose[@]}" up -d --no-deps "$RUNTIME_SERVICE"
+            "${runtime_compose[@]}" up -d --force-recreate --no-deps "$RUNTIME_SERVICE"
             wait_for_health
           }
 
@@ -237,7 +237,7 @@ jobs:
             exit 1
           fi
 
-          if ! "${runtime_compose[@]}" up -d --no-deps "$RUNTIME_SERVICE"; then
+          if ! "${runtime_compose[@]}" up -d --force-recreate --no-deps "$RUNTIME_SERVICE"; then
             restore_previous_runtime || true
             exit 1
           fi
