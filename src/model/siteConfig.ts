@@ -17,6 +17,7 @@ export interface AboutConfigValue {
   about_me: string;
   email: string;
   address: string;
+  whatsapp?: string;
 }
 
 export interface FooterConfigValue {
@@ -62,6 +63,7 @@ export interface AboutLandingValue {
   about_me: LocalizedTextValue;
   email: string;
   address: string;
+  whatsapp?: string;
 }
 
 export interface FooterLandingValue {

@@ -105,6 +105,7 @@ describe("GET /exports/*.pdf", () => {
         { type: "home", locale: "en", key: "description", value: "   ", created_by: 0, updated_by: 0 },
         { type: "about", locale: null, key: "email", value: "john@example.com", created_by: 0, updated_by: 0 },
         { type: "about", locale: null, key: "address", value: "Jakarta Indonesia", created_by: 0, updated_by: 0 },
+        { type: "about", locale: null, key: "whatsapp", value: "8121234567", created_by: 0, updated_by: 0 },
         { type: "about", locale: "id", key: "about_me", value: "Tentang saya backend engineer", created_by: 0, updated_by: 0 },
         { type: "about", locale: "en", key: "about_me", value: "About me backend engineer", created_by: 0, updated_by: 0 },
         { type: "footer", locale: null, key: "linkedin", value: "https://linkedin.com/in/johndoe", created_by: 0, updated_by: 0 },
@@ -279,6 +280,7 @@ describe("GET /exports/*.pdf", () => {
     const pdfText = normalizePdfAssertion(extractPdfText(response.body));
     expect(pdfText).toContain(normalizePdfAssertion("John Doe"));
     expect(pdfText).toContain(normalizePdfAssertion("Jakarta Indonesia"));
+    expect(pdfText).toContain(normalizePdfAssertion("WhatsApp: +628121234567"));
     expect(pdfText).toContain(normalizePdfAssertion("Backend Engineer"));
     expect(pdfText).toContain(normalizePdfAssertion("Ringkasan profil backend engineer"));
     expect(pdfText).toContain(normalizePdfAssertion("About me backend engineer"));

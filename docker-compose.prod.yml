@@ -1,26 +1,15 @@
 services:
   portfolio_site_be:
+    image: ${PORTFOLIO_SITE_BE_IMAGE:?PORTFOLIO_SITE_BE_IMAGE is required in production}
     container_name: portfolio_site_be
     restart: always
-    environment:
-      TRUST_PROXY: "2"
-    networks:
-      - portfolio_site_be_network
-      - global_portfolio_site_network
-
-  portfolio_site_be_db:
-    container_name: portfolio_site_be_db
-    restart: always
     volumes:
-      - postgresportfoliosite:/var/lib/postgresql/data
-    networks:
-      - portfolio_site_be_network
+      - ${UPLOADS_PATH:?UPLOADS_PATH is required in production}:/usr/src/app/uploads
+    environment:
+      NODE_ENV: production
+      COOKIE_SECRET: ${COOKIE_SECRET:?COOKIE_SECRET is required in production}
+      TRUST_PROXY: "2"
 
-volumes:
-  postgresportfoliosite: {}
-
-networks:
-  portfolio_site_be_network:
-    driver: bridge
-  global_portfolio_site_network:
-    external: true
+  portfolio_site_be_migrator:
+    image: ${PORTFOLIO_SITE_BE_MIGRATOR_IMAGE:?PORTFOLIO_SITE_BE_MIGRATOR_IMAGE is required in production}
+    restart: "no"

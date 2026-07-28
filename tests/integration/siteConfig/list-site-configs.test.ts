@@ -97,6 +97,7 @@ describe("GET /site-configs", () => {
             },
             email: "id@example.com",
             address: "Bandung, Indonesia",
+            whatsapp: "8121234567",
           },
         },
       });
@@ -117,6 +118,7 @@ describe("GET /site-configs", () => {
       },
       email: "id@example.com",
       address: "Bandung, Indonesia",
+      whatsapp: "8121234567",
     });
   });
 });

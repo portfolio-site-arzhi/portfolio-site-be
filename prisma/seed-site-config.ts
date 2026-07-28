@@ -51,6 +51,7 @@ const main = async () => {
       values: {
         email: "ardiansyah@example.com",
         address: "Jakarta, Indonesia",
+        whatsapp: "8121234567",
       },
     },
     {
