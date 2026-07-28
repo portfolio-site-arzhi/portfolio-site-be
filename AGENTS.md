@@ -4,6 +4,7 @@ Gunakan file ini sebagai ringkasan cepat. Aturan detail dipisah ke folder `rules
 
 ## Prioritas Penting
 
+- Jangan membuat, menghapus, atau mengubah file aturan (`AGENTS.md`, `rules.md`, dan seluruh file dalam folder `rules/`) kecuali user meminta secara eksplisit.
 - Wajib pakai Context7 (MCP) saat butuh pembuatan kode yang bergantung pada library/API, langkah setup/konfigurasi, atau dokumentasi library/API. Resolve Library ID dulu lalu ambil docs; untuk Prisma gunakan Context7, bukan Prisma-Local.
 - Jangan menjalankan aplikasi/server secara otomatis; cukup jalankan integration test yang relevan.
 - Hindari `any`, `console.log`, dan edit `package.json` manual. Gunakan `unknown` dengan narrowing, `console.error` bila perlu, serta `npm install`/`npm install -D` untuk dependency.

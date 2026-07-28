@@ -2,23 +2,13 @@ services:
   portfolio_site_be:
     container_name: portfolio_site_be
     restart: "no"
-    networks:
-      - portfolio_site_be_network
-      - global_portfolio_site_network
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
 
-  portfolio_site_be_db:
-    container_name: portfolio_site_be_db
-    restart: "no"
-    volumes:
-      - postgresportfoliosite:/var/lib/postgresql/data
-    networks:
-      - portfolio_site_be_network
-
-volumes:
-  postgresportfoliosite: {}
-
-networks:
-  portfolio_site_be_network:
-    driver: bridge
-  global_portfolio_site_network:
-    external: true
+  portfolio_site_be_migrator:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: migrator

@@ -10,6 +10,7 @@
 
 # Aturan Umum
 
+- Jangan membuat, menghapus, atau mengubah file aturan (`AGENTS.md`, `rules.md`, dan seluruh file dalam folder `rules/`) kecuali user meminta secara eksplisit.
 - Jangan running aplikasi (server) karena sudah dijalankan; cukup jalankan integration test yang relevan, kalau ada error langsung diperbaiki.
 - Pattern lebih baik banyak file yang spesifik dan mudah di-maintain/debug.
 - Hindari tipe any; kalau perlu gunakan unknown lalu narrowing.

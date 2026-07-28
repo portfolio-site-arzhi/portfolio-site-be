@@ -1,4 +1,4 @@
-name: Deploy Production
+name: Build and Deploy Production
 
 on:
   push:
@@ -6,21 +6,239 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: artifact-deploy-${{ github.repository }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
 jobs:
-  deploy:
-    name: Deploy to VPS
+  build:
+    name: Build and push images
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      runtime_image: ${{ steps.images.outputs.runtime }}
+      migrator_image: ${{ steps.images.outputs.migrator }}
     steps:
-      - name: Deploy via SSH
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Set image references
+        id: images
+        shell: bash
+        run: |
+          image_name="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          echo "runtime=${REGISTRY}/${image_name}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "migrator=${REGISTRY}/${image_name}:${GITHUB_SHA}-migrator" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: runtime
+          push: true
+          tags: ${{ steps.images.outputs.runtime }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push migrator image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: migrator
+          push: true
+          tags: ${{ steps.images.outputs.migrator }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  deploy:
+    name: Migrate and deploy to VPS
+    needs: build
+    if: vars.ARTIFACT_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Copy Compose manifests and deploy images
+        shell: bash
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
           APP_DIR: ${{ secrets.APP_DIR }}
+          RUNTIME_IMAGE: ${{ needs.build.outputs.runtime_image }}
+          MIGRATOR_IMAGE: ${{ needs.build.outputs.migrator_image }}
         run: |
-          printf '%s\n' "$SSH_KEY" > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
-          trap 'rm -f /tmp/deploy_key' EXIT
-          ssh -p "$SSH_PORT" -i /tmp/deploy_key -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "cd '$APP_DIR' && git pull origin master && docker compose down && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build"
+          set -euo pipefail
+          : "${SSH_HOST:?SSH_HOST is required}"
+          : "${SSH_PORT:?SSH_PORT is required}"
+          : "${SSH_USER:?SSH_USER is required}"
+          : "${SSH_KEY:?SSH_KEY is required}"
+          : "${SSH_KNOWN_HOSTS:?SSH_KNOWN_HOSTS is required}"
+          : "${APP_DIR:?APP_DIR is required}"
+          : "${RUNTIME_IMAGE:?Runtime image is required}"
+          : "${MIGRATOR_IMAGE:?Migrator image is required}"
+
+          ssh_dir="$RUNNER_TEMP/deploy-ssh"
+          install -d -m 700 "$ssh_dir"
+          printf '%s\n' "$SSH_KEY" > "$ssh_dir/deploy_key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          chmod 600 "$ssh_dir/deploy_key" "$ssh_dir/known_hosts"
+
+          ssh_options=(
+            -p "$SSH_PORT"
+            -i "$ssh_dir/deploy_key"
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$ssh_dir/known_hosts"
+          )
+
+          scp "${ssh_options[@]}" \
+            docker-compose.yml docker-compose.prod.yml \
+            "$SSH_USER@$SSH_HOST:$APP_DIR/"
+
+          app_dir_b64="$(printf '%s' "$APP_DIR" | base64 | tr -d '\n')"
+          runtime_image_b64="$(printf '%s' "$RUNTIME_IMAGE" | base64 | tr -d '\n')"
+          migrator_image_b64="$(printf '%s' "$MIGRATOR_IMAGE" | base64 | tr -d '\n')"
+
+          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" \
+            "APP_DIR_B64='$app_dir_b64' RUNTIME_IMAGE_B64='$runtime_image_b64' MIGRATOR_IMAGE_B64='$migrator_image_b64' RUNTIME_IMAGE_VARIABLE='PORTFOLIO_SITE_BE_IMAGE' MIGRATOR_IMAGE_VARIABLE='PORTFOLIO_SITE_BE_MIGRATOR_IMAGE' RUNTIME_SERVICE='portfolio_site_be' MIGRATOR_SERVICE='portfolio_site_be_migrator' CONTAINER_NAME='portfolio_site_be' bash -s" <<'REMOTE_SCRIPT'
+          set -euo pipefail
+
+          APP_DIR="$(printf '%s' "$APP_DIR_B64" | base64 --decode)"
+          RUNTIME_IMAGE="$(printf '%s' "$RUNTIME_IMAGE_B64" | base64 --decode)"
+          MIGRATOR_IMAGE="$(printf '%s' "$MIGRATOR_IMAGE_B64" | base64 --decode)"
+          cd "$APP_DIR"
+
+          if [ ! -f .env ]; then
+            echo "Missing production .env in $APP_DIR."
+            exit 1
+          fi
+
+          runtime_compose=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
+          migration_compose=(docker compose --profile migration -f docker-compose.yml -f docker-compose.prod.yml)
+          env_backup="$(mktemp)"
+          cp .env "$env_backup"
+          trap 'rm -f "$env_backup"' EXIT
+
+          get_env_value() {
+            awk -v key="$1" 'index($0, key "=") == 1 { value = substr($0, length(key) + 2) } END { print value }' .env
+          }
+
+          set_env_value() {
+            local key="$1"
+            local value="$2"
+            local temporary_env
+            temporary_env="$(mktemp)"
+
+            awk -v key="$key" -v value="$value" '
+              index($0, key "=") == 1 { print key "=" value; found = 1; next }
+              { print }
+              END { if (!found) print key "=" value }
+            ' .env > "$temporary_env"
+            mv "$temporary_env" .env
+          }
+
+          restore_env() {
+            cp "$env_backup" .env
+          }
+
+          wait_for_health() {
+            for attempt in {1..18}; do
+              health_status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$CONTAINER_NAME" 2>/dev/null || true)"
+
+              if [ "$health_status" = "healthy" ]; then
+                return 0
+              fi
+
+              if [ "$health_status" = "unhealthy" ]; then
+                echo "Container $CONTAINER_NAME is unhealthy."
+                return 1
+              fi
+
+              sleep 5
+            done
+
+            echo "Timed out waiting for $CONTAINER_NAME to become healthy."
+            return 1
+          }
+
+          restore_previous_runtime() {
+            echo "Runtime deployment failed; restoring the previous image."
+            restore_env
+
+            if [ -z "$previous_runtime_image" ]; then
+              echo "No previous runtime image is configured; manual recovery is required."
+              return 1
+            fi
+
+            "${runtime_compose[@]}" pull "$RUNTIME_SERVICE"
+            "${runtime_compose[@]}" up -d --no-deps "$RUNTIME_SERVICE"
+            wait_for_health
+          }
+
+          previous_runtime_image="$(get_env_value "$RUNTIME_IMAGE_VARIABLE")"
+          set_env_value "$RUNTIME_IMAGE_VARIABLE" "$RUNTIME_IMAGE"
+          set_env_value "$MIGRATOR_IMAGE_VARIABLE" "$MIGRATOR_IMAGE"
+
+          if ! "${runtime_compose[@]}" config --quiet; then
+            restore_env
+            exit 1
+          fi
+
+          if ! "${migration_compose[@]}" config --quiet; then
+            restore_env
+            exit 1
+          fi
+
+          if ! "${migration_compose[@]}" pull "$MIGRATOR_SERVICE"; then
+            restore_env
+            exit 1
+          fi
+
+          if ! "${migration_compose[@]}" run --rm --no-deps "$MIGRATOR_SERVICE"; then
+            echo "Migration failed; the runtime backend was not changed."
+            restore_env
+            exit 1
+          fi
+
+          if ! "${runtime_compose[@]}" pull "$RUNTIME_SERVICE"; then
+            restore_env
+            exit 1
+          fi
+
+          if ! "${runtime_compose[@]}" up -d --no-deps "$RUNTIME_SERVICE"; then
+            restore_previous_runtime || true
+            exit 1
+          fi
+
+          if ! wait_for_health; then
+            restore_previous_runtime || true
+            exit 1
+          fi
+
+          echo "Deployment completed with runtime image $RUNTIME_IMAGE."
+          REMOTE_SCRIPT

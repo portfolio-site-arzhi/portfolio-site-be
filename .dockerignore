@@ -1,5 +1,6 @@
 node_modules
 dist
+uploads
 .env
 .env.testing
 .env.local
@@ -15,6 +16,7 @@ yarn-error.log*
 .git
 .gitignore
 README.md
-./Dockerfile
 docker-compose*.yml
 .dockerignore
+sample
+tests
