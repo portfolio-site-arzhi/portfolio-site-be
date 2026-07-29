@@ -15,20 +15,20 @@ Gunakan file ini sebagai ringkasan cepat. Aturan detail dipisah ke folder `rules
 
 ## Index Rules
 
-- `rules/01-general.mdx`
+- `rules/01-general.md`
   Context7, standar coding, dependency, database, dan environment.
-- `rules/02-architecture.mdx`
+- `rules/02-architecture.md`
   Struktur folder, type/interface, dan repository contract.
-- `rules/03-api-contract.mdx`
+- `rules/03-api-contract.md`
   Validation, pagination, sorting, dan upload file.
-- `rules/04-documentation.mdx`
+- `rules/04-documentation.md`
   Aturan dokumentasi API.
-- `rules/05-testing-and-verification.mdx`
+- `rules/05-testing-and-verification.md`
   Isolasi dan pemilihan integration test.
-- `rules/06-environment.mdx`
+- `rules/06-environment.md`
   Aturan environment dan logging.
 
 ## Catatan
 
 - `AGENTS.md` ini tetap dipakai sebagai ringkasan cepat.
-- Detail aturan harus dirujuk dari `rules/*.mdx`.
+- Detail aturan harus dirujuk dari `rules/*.md`.
